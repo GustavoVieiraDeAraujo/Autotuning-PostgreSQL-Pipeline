@@ -20,15 +20,10 @@ Interrupção
 
 Resultados
 ----------
-    output/
-    ├── queue.json                    ← estado da fila (atualizado em tempo real)
-    └── benchmark_results/
-        ├── low/
-        │   └── s1/
-        │       ├── task_0.json       ← contém tpc_h + tpc_ds
-        │       └── task_1.json
-        ├── medium/
-        └── high/
+    Fila e resultados vivem no Postgres de controle (ver db/schema.sql),
+    não mais em arquivos locais — permite múltiplos workers `cli/run.py`,
+    inclusive em máquinas diferentes, disputando a mesma fila com segurança.
+    Configuração via variável de ambiente ``DATABASE_URL`` (ver utils/db.py).
 """
 
 import argparse
@@ -40,26 +35,24 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
-_ROOT        = Path(__file__).parent.parent
-_QUEUE_PATH  = _ROOT / "data" / "queue.json"
-_RESULTS_DIR = _ROOT / "data" / "raw"
-_LOG_PATH    = _ROOT / "logs" / "runner.log"
-_LOCK_PATH   = _ROOT / "data" / ".runner.lock"
-_DOCKER_CFG  = _ROOT / "specs" / "docker.json"
+_ROOT       = Path(__file__).parent.parent
+_DATA_DIR   = _ROOT / "data"      # usado só p/ checagem de espaço em disco local
+_LOG_PATH   = _ROOT / "logs" / "runner.log"
+_LOCK_PATH  = _ROOT / "data" / ".runner.lock"
+_DOCKER_CFG = _ROOT / "specs" / "docker.json"
 
 from benchmarks.image_builder import TIER_IMAGE_TAGS, image_exists
 from taskqueue import ExecutionQueue
 from runner.preflight import run_preflight_checks                    # noqa: E402
 from runner.result_writer import (                                   # noqa: E402
-    abandon_task_file,
     append_query_result,
     finalize_benchmark_section,
-    finalize_task_file,
-    init_task_file,
+    finalize_task_result,
+    init_task_result,
     save_hw_metrics,
-    task_path,
 )
 from runner.task_executor import run_task, InvalidConfigError, TaskTimeoutError  # noqa: E402
+from utils.db import connect as db_connect                          # noqa: E402
 from utils.docker_cleanup import auto_prune_if_needed, PRUNE_EVERY_N_TASKS  # noqa: E402
 from utils.formatting import fmt_duration, fmt_eta                  # noqa: E402
 from utils.logging import TeeWriter, banner, log, sep               # noqa: E402
@@ -100,12 +93,12 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
     banner("BENCHMARK RUNNER — TPC-H + TPC-DS PostgreSQL Autotuning")
 
     # ── Fila ──────────────────────────────────────────────────────────────
-    if not _QUEUE_PATH.exists():
-        log(f"Fila não encontrada: {_QUEUE_PATH}", level="ERROR")
+    queue = ExecutionQueue()
+
+    if queue.is_empty():
+        log("Fila vazia — nenhuma tarefa foi gerada ainda.", level="ERROR")
         log("Gere as configurações via interface web ou 'make generate'.", level="WARN")
         sys.exit(1)
-
-    queue = ExecutionQueue(_QUEUE_PATH)
 
     if retry_failed:
         n = queue.retry_failed()
@@ -117,7 +110,6 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
     n_done    = stats["done"]
     n_failed  = stats["failed"]
 
-    log(f"Fila : {_QUEUE_PATH.relative_to(_ROOT)}")
     log(f"Total: {total} tarefas | {n_done} concluídas | "
         f"{n_pending} pendentes | {n_failed} com falha")
 
@@ -160,7 +152,7 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
     # ── Preflight ───────────────────────────────────────────────────────────
     sep()
     log("Verificações pré-execução (preflight)...", level="HEAD")
-    run_preflight_checks(tier_configs, list(queue), _RESULTS_DIR)
+    run_preflight_checks(tier_configs, list(queue), _DATA_DIR)
 
     # ── Loop de execução ───────────────────────────────────────────────────
     sep()
@@ -192,13 +184,13 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
 
         started_at = datetime.now(timezone.utc).isoformat()
         t_task     = time.perf_counter()
-        out_path   = init_task_file(task, started_at, _RESULTS_DIR)
+        result_id  = init_task_result(task, started_at)
 
-        def _on_tpch(qr: dict, _path: Path = out_path) -> None:
-            append_query_result(_path, qr, "tpc_h")
+        def _on_tpch(qr: dict, _id: int = result_id) -> None:
+            append_query_result(_id, qr, "tpc_h")
 
-        def _on_tpcds(qr: dict, _path: Path = out_path) -> None:
-            append_query_result(_path, qr, "tpc_ds")
+        def _on_tpcds(qr: dict, _id: int = result_id) -> None:
+            append_query_result(_id, qr, "tpc_ds")
 
         try:
             tpch_result, tpcds_result, hw_metrics = run_task(
@@ -210,10 +202,10 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
             duration_s  = time.perf_counter() - t_task
             finished_at = datetime.now(timezone.utc).isoformat()
 
-            finalize_benchmark_section(out_path, "tpc_h",  tpch_result)
-            finalize_benchmark_section(out_path, "tpc_ds", tpcds_result)
-            save_hw_metrics(out_path, hw_metrics)
-            finalize_task_file(out_path, finished_at, duration_s)
+            finalize_benchmark_section(result_id, "tpc_h",  tpch_result)
+            finalize_benchmark_section(result_id, "tpc_ds", tpcds_result)
+            save_hw_metrics(result_id, hw_metrics)
+            finalize_task_result(result_id, finished_at, duration_s)
 
             # ── Métricas TPC-H ────────────────────────────────────────────
             tpch_ok    = tpch_result["n_success"]
@@ -252,10 +244,9 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
             )
 
             log(f"Tarefa concluída em {fmt_duration(duration_s)}", level="OK", indent=1)
-            log(f"Resultado salvo: {out_path.relative_to(_ROOT)}", indent=1)
+            log(f"Resultado salvo no banco (task_id={result_id})", indent=1)
 
             queue.mark_done(tid, {
-                "result_path":      str(out_path.relative_to(_ROOT)),
                 "tpc_h_n_success":  tpch_ok,
                 "tpc_h_n_failed":   tpch_fail,
                 "tpc_h_total_ms":   tpch_ms,
@@ -276,7 +267,7 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
                 level="ERROR", indent=1)
             for line in err_msg.strip().splitlines():
                 log(line, level="ERROR", indent=2)
-            abandon_task_file(out_path, finished_at, duration_s, "invalid_config", err_msg)
+            finalize_task_result(result_id, finished_at, duration_s)
             queue.mark_abandoned(tid, err_msg, reason="invalid_config")
             tasks_abandoned += 1
 
@@ -292,11 +283,11 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
             # Salva o summary do TPC-H para não perder os dados coletados.
             if exc.partial_tpch_result is not None:
                 try:
-                    finalize_benchmark_section(out_path, "tpc_h", exc.partial_tpch_result)
+                    finalize_benchmark_section(result_id, "tpc_h", exc.partial_tpch_result)
                     log("TPC-H summary salvo antes do abandono.", level="DIM", indent=2)
                 except Exception:  # noqa: BLE001
                     pass
-            abandon_task_file(out_path, finished_at, duration_s, "timeout", err_msg)
+            finalize_task_result(result_id, finished_at, duration_s)
             queue.mark_abandoned(tid, err_msg, reason="timeout")
             tasks_abandoned += 1
 
@@ -321,14 +312,14 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
                     f"Tentativa {attempt}/{_MAX_RETRIES} falhou — abandonando tarefa.",
                     level="ERROR", indent=1,
                 )
-                abandon_task_file(out_path, finished_at, duration_s, "max_retries", err_msg)
+                finalize_task_result(result_id, finished_at, duration_s)
                 queue.mark_abandoned(tid, err_msg, reason="max_retries")
                 tasks_abandoned += 1
 
         # Limpeza periódica de disco (a cada PRUNE_EVERY_N_TASKS tarefas)
         done_so_far = tasks_done + tasks_abandoned
         if done_so_far > 0 and done_so_far % PRUNE_EVERY_N_TASKS == 0:
-            auto_prune_if_needed(path=_RESULTS_DIR.parent)
+            auto_prune_if_needed(path=_DATA_DIR)
 
         # ETA
         elapsed     = time.perf_counter() - t_run_start
@@ -353,7 +344,6 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
         f"Pendentes: {final_stats['pending']} | "
         f"Tempo total: {fmt_duration(elapsed_total)}"
     )
-    log(f"Fila atualizada em: {_QUEUE_PATH.relative_to(_ROOT)}")
     sep("═")
 
 
@@ -364,12 +354,13 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
 def _status() -> None:
     banner("STATUS — Benchmark Runner (TPC-H + TPC-DS)")
 
-    if not _QUEUE_PATH.exists():
-        log(f"Fila não encontrada: {_QUEUE_PATH}", level="WARN")
+    queue = ExecutionQueue()
+
+    if queue.is_empty():
+        log("Fila vazia — nenhuma tarefa foi gerada ainda.", level="WARN")
         log("Gere as configurações via interface web ou 'make generate'.", level="DIM")
         return
 
-    queue = ExecutionQueue(_QUEUE_PATH)
     s     = queue.stats()
     total = len(queue)
 
@@ -401,6 +392,13 @@ def _status() -> None:
     for t in done_tasks:
         by_tier.setdefault(t["tier"], []).append(t)
 
+    with db_connect() as conn:
+        result_rows = conn.execute(
+            "SELECT task_id, tpc_h->>'total_ms' AS tpch_ms, tpc_ds->>'total_ms' AS tpcds_ms "
+            "FROM task_results"
+        ).fetchall()
+    ms_by_task_id = {r["task_id"]: r for r in result_rows}
+
     for tier in ["low", "medium", "high"]:
         tasks = by_tier.get(tier, [])
         if not tasks:
@@ -408,17 +406,13 @@ def _status() -> None:
         tpch_ms_list:  list[float] = []
         tpcds_ms_list: list[float] = []
         for t in tasks:
-            path = task_path(t, _RESULTS_DIR)
-            if path.exists():
-                try:
-                    with open(path, encoding="utf-8") as f:
-                        data = json.load(f)
-                    if data.get("tpc_h", {}).get("total_ms"):
-                        tpch_ms_list.append(data["tpc_h"]["total_ms"])
-                    if data.get("tpc_ds", {}).get("total_ms"):
-                        tpcds_ms_list.append(data["tpc_ds"]["total_ms"])
-                except Exception:  # noqa: BLE001
-                    pass
+            r = ms_by_task_id.get(t["id"])
+            if r is None:
+                continue
+            if r["tpch_ms"]:
+                tpch_ms_list.append(float(r["tpch_ms"]))
+            if r["tpcds_ms"]:
+                tpcds_ms_list.append(float(r["tpcds_ms"]))
 
         tpch_avg  = fmt_duration(sum(tpch_ms_list)  / len(tpch_ms_list)  / 1000) if tpch_ms_list  else "–"
         tpcds_avg = fmt_duration(sum(tpcds_ms_list) / len(tpcds_ms_list) / 1000) if tpcds_ms_list else "–"

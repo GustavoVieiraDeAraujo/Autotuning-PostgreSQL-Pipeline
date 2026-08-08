@@ -1,17 +1,23 @@
 """
 Fila de execução persistente para testes sequenciais de configurações PostgreSQL.
 
-Estrutura de uma tarefa
------------------------
+Backend: Postgres (ver db/schema.sql), não mais um arquivo JSON local. Isso
+permite que múltiplos workers `cli/run.py` — potencialmente em máquinas
+diferentes — reivindiquem tarefas da mesma fila com segurança, via
+`SELECT ... FOR UPDATE SKIP LOCKED` em ``next()``.
+
+Estrutura de uma tarefa (dict retornado por next()/pending()/done()/__iter__)
+------------------------------------------------------------------------------
     {
-        "id":               int,         # identificador único sequencial
+        "id":               int,         # identificador único (BIGSERIAL)
         "combination":      str,         # ex: "s1", "s1_s2_s3"
         "tier":             str,         # "low" | "medium" | "high"
         "config":           dict,        # parâmetros PostgreSQL gerados
+        "repetition":       int,
         "status":           str,         # ver ciclo de vida abaixo
         "retry_count":      int,         # tentativas já realizadas (0 = primeira vez)
         "abandoned_reason": str | None,  # "invalid_config" | "timeout" | "max_retries"
-        "result":           dict | None, # preenchido após execução bem-sucedida
+        "result":           dict | None, # resumo preenchido após execução bem-sucedida
         "error":            str  | None  # preenchido em caso de falha
     }
 
@@ -21,21 +27,27 @@ Ciclo de vida de uma tarefa
                      ↘ pending (retry automático, até MAX_RETRIES tentativas)
                      ↘ abandoned (invalid_config | timeout | max_retries esgotado)
 
-A transição pending→running ocorre atomicamente em ``next()``.
-Tarefas interrompidas em estado "running" voltam para "pending" no
-próximo carregamento da fila (auto-recuperação).
+A transição pending→running ocorre atomicamente em ``next()``, via
+``UPDATE ... WHERE id = (SELECT ... FOR UPDATE SKIP LOCKED)`` — dois workers
+nunca recebem a mesma tarefa, mesmo concorrendo pela mesma linha.
+
+Recuperação de crash: como não há mais um único processo "dono" da fila que
+recarrega o arquivo ao reiniciar, ``next()`` também reivindica tarefas presas
+em "running" cujo lease (baseado no timeout do próprio tier — ver
+runner/task_executor.py::_TASK_TIMEOUT_S) já expirou. Um worker que morreu
+sem marcar a tarefa como concluída/abandonada libera a tarefa automaticamente
+depois desse tempo, sem precisar de heartbeat nem de reiniciar nada.
 
 Nota: o estado "failed" ainda existe para compatibilidade com ``--retry-failed``,
 mas não é mais usado durante o fluxo normal de retry (``requeue_with_retry`` vai
-direto para "pending", evitando um write duplo e eliminando o estado transitório
-visível no queue.json).
+direto para "pending").
 """
 
-import json
-import os
-from collections import deque
 from collections.abc import Iterator
-from pathlib import Path
+
+from psycopg.types.json import Jsonb
+
+from utils.db import connect, get_dsn
 
 # Status válidos
 _PENDING   = "pending"
@@ -44,29 +56,41 @@ _DONE      = "done"
 _FAILED    = "failed"
 _ABANDONED = "abandoned"
 
+_ALL_STATUSES = (_PENDING, _RUNNING, _DONE, _FAILED, _ABANDONED)
+
+# Colunas retornadas por tarefa — "result_summary" é exposto como "result"
+# para manter o mesmo formato de dict usado no resto do projeto.
+_TASK_COLUMNS = """
+    id, combination, tier, config, repetition, status, retry_count,
+    abandoned_reason, error, result_summary AS result,
+    claimed_at, claimed_by, created_at, updated_at
+"""
+
+# Lease de reivindicação por tier: quanto tempo uma tarefa "running" pode
+# ficar sem lock antes de ser considerada abandonada por um worker morto e
+# devolvida à fila. Espelha runner/task_executor.py::_TASK_TIMEOUT_S mais
+# uma margem de segurança — uma tarefa legítima sempre termina (ou levanta
+# TaskTimeoutError) bem antes desse prazo.
+_LEASE_SQL_CASE = """
+    CASE tier
+        WHEN 'low'    THEN INTERVAL '3.5 hours'
+        WHEN 'medium' THEN INTERVAL '4.5 hours'
+        WHEN 'high'   THEN INTERVAL '8.5 hours'
+        ELSE INTERVAL '9 hours'
+    END
+"""
+
 
 class ExecutionQueue:
-    """Fila de execução persistente para configurações PostgreSQL.
-
-    Usa internamente um ``deque`` para operações O(1) de enqueue/dequeue
-    e persiste o estado em JSON após cada mudança, garantindo que o
-    progresso seja preservado entre execuções.
+    """Fila de execução persistente para configurações PostgreSQL, em Postgres.
 
     Args:
-        queue_path: Caminho do arquivo JSON que persiste o estado da fila.
-                    Criado automaticamente se não existir.
+        dsn: Connection string do banco de controle. Se omitida, usa
+             ``utils.db.get_dsn()`` (variável de ambiente ``DATABASE_URL``).
     """
 
-    def __init__(self, queue_path: str | Path) -> None:
-        self._path      = Path(queue_path)
-        self._tasks: list[dict] = []
-        self._queue: deque[int] = deque()  # IDs das tasks "pending"
-        self._id_to_idx: dict[int, int] = {}  # task_id → índice em _tasks
-
-        if self._path.exists():
-            self._load()
-        else:
-            self._save()
+    def __init__(self, dsn: str | None = None) -> None:
+        self._dsn = dsn or get_dsn()
 
     # ------------------------------------------------------------------
     # Fábrica — constrói a fila a partir dos resultados gerados
@@ -76,72 +100,81 @@ class ExecutionQueue:
     def from_dict(
         cls,
         all_results: dict[str, dict[str, list]],
-        queue_path: str | Path,
+        dsn: str | None = None,
         repetitions: int = 1,
     ) -> "ExecutionQueue":
-        """Cria a fila diretamente de um dict em memória.
+        """Popula a fila a partir de um dict em memória.
+
+        Não-destrutivo: se a fila já tiver tarefas, retorna sem inserir nada
+        (mesma proteção contra sobrescrever uma fila em andamento que existia
+        no backend em arquivo). Use ``reset()`` explicitamente antes, se a
+        intenção for começar uma fila nova.
 
         Args:
-            all_results:  Dict ``{label: {tier: [Config]}}`` — saída direta
-                          de ``generate_configs()``.
-            queue_path:   Onde salvar o estado da fila (``queue.json``).
-            repetitions:  Número de vezes que cada config é enfileirada.
-                          Padrão 1. Use >1 para robustez estatística (mediana
-                          de N runs por config).
+            all_results: Dict ``{label: {tier: [Config]}}`` — saída direta
+                         de ``generate_configs()``.
+            dsn:         Connection string do banco de controle.
+            repetitions: Número de vezes que cada config é enfileirada.
 
         Returns:
             Instância de ExecutionQueue pronta para uso.
         """
-        queue = cls(queue_path)
-
-        if queue._tasks:
+        queue = cls(dsn)
+        if not queue.is_empty():
             return queue
 
-        task_id = 0
+        rows: list[tuple] = []
         for tier in ["low", "medium", "high"]:
             for label, tier_configs in all_results.items():
                 for config in tier_configs.get(tier, []):
                     for rep in range(repetitions):
-                        queue._tasks.append({
-                            "id":               task_id,
-                            "combination":      label,
-                            "tier":             tier,
-                            "config":           config,
-                            "repetition":       rep,
-                            "status":           _PENDING,
-                            "retry_count":      0,
-                            "abandoned_reason": None,
-                            "result":           None,
-                            "error":            None,
-                        })
-                        queue._queue.append(task_id)
-                        task_id += 1
+                        rows.append((label, tier, Jsonb(config), rep))
 
-        queue._id_to_idx = {t["id"]: i for i, t in enumerate(queue._tasks)}
-        queue._save()
+        with connect(queue._dsn) as conn:
+            conn.cursor().executemany(
+                "INSERT INTO tasks (combination, tier, config, repetition) "
+                "VALUES (%s, %s, %s, %s)",
+                rows,
+            )
         return queue
 
     # ------------------------------------------------------------------
     # API principal de execução
     # ------------------------------------------------------------------
 
-    def next(self) -> dict | None:
-        """Retorna a próxima tarefa pendente e a marca como 'running'.
+    def next(self, worker_id: str | None = None) -> dict | None:
+        """Reivindica a próxima tarefa disponível e a marca como 'running'.
 
-        A mudança de status é persistida imediatamente para garantir
-        que uma tarefa não seja entregue duas vezes em caso de reinício.
+        Atômico mesmo com múltiplos workers concorrentes (``FOR UPDATE
+        SKIP LOCKED``): prioriza tarefas 'pending' genuínas; se não houver
+        nenhuma, reivindica uma tarefa 'running' cujo lease expirou (worker
+        anterior presumivelmente morto).
+
+        Args:
+            worker_id: Identificador opcional do worker (host:pid, por
+                       exemplo) — gravado em ``claimed_by`` para diagnóstico.
 
         Returns:
-            Dict da tarefa, ou None se não houver pendentes.
+            Dict da tarefa, ou None se não houver nenhuma disponível.
         """
-        while self._queue:
-            task_id = self._queue.popleft()
-            task    = self._tasks[self._id_to_idx[task_id]]
-            if task["status"] == _PENDING:
-                task["status"] = _RUNNING
-                self._save()
-                return task
-        return None
+        with connect(self._dsn) as conn:
+            row = conn.execute(
+                f"""
+                UPDATE tasks
+                SET status = 'running', claimed_at = now(), claimed_by = %(worker_id)s
+                WHERE id = (
+                    SELECT id FROM tasks
+                    WHERE status = 'pending'
+                       OR (status = 'running' AND claimed_at < now() - ({_LEASE_SQL_CASE}))
+                    ORDER BY (status = 'running'), id
+                    FOR UPDATE SKIP LOCKED
+                    LIMIT 1
+                )
+                RETURNING {_TASK_COLUMNS}
+                """,
+                {"worker_id": worker_id},
+            ).fetchone()
+        return row
 
     def mark_done(self, task_id: int, result: dict) -> None:
         """Marca uma tarefa como concluída com sucesso.
@@ -150,41 +183,45 @@ class ExecutionQueue:
             task_id: ID da tarefa retornada por ``next()``.
             result:  Dict com os resultados do benchmark (resumo).
         """
-        self._set_status(task_id, _DONE, result=result)
+        with connect(self._dsn) as conn:
+            conn.execute(
+                "UPDATE tasks SET status = %s, result_summary = %s WHERE id = %s",
+                (_DONE, Jsonb(result), task_id),
+            )
 
     def mark_abandoned(self, task_id: int, error: str, reason: str = "") -> None:
         """Marca uma tarefa como abandonada permanentemente.
-
-        Tarefas abandonadas não são reenfileiradas automaticamente e
-        ficam registradas para análise posterior.
 
         Args:
             task_id: ID da tarefa.
             error:   Traceback ou descrição do último erro.
             reason:  Causa do abandono: "invalid_config" | "timeout" | "max_retries".
         """
-        task = self._tasks[self._id_to_idx[task_id]]
-        task["status"]           = _ABANDONED
-        task["error"]            = error
-        task["abandoned_reason"] = reason or None
-        self._save()
+        with connect(self._dsn) as conn:
+            conn.execute(
+                "UPDATE tasks SET status = %s, error = %s, abandoned_reason = %s WHERE id = %s",
+                (_ABANDONED, error, reason or None, task_id),
+            )
 
     def requeue_with_retry(self, task_id: int, error: str) -> None:
         """Recoloca uma tarefa na fila incrementando seu contador de tentativas.
 
-        Vai direto para "pending" em um único write, sem passar pelo estado
-        transitório "failed". Use este método no fluxo normal de retry.
+        Vai direto para "pending" — mesmo fluxo que no backend em arquivo.
 
         Args:
             task_id: ID da tarefa que falhou.
             error:   Descrição do erro desta tentativa (salva para diagnóstico).
         """
-        task = self._tasks[self._id_to_idx[task_id]]
-        task["retry_count"] = task.get("retry_count", 0) + 1
-        task["status"]      = _PENDING
-        task["error"]       = error
-        self._queue.append(task_id)
-        self._save()
+        with connect(self._dsn) as conn:
+            conn.execute(
+                """
+                UPDATE tasks
+                SET status = %s, retry_count = retry_count + 1, error = %s,
+                    claimed_at = NULL, claimed_by = NULL
+                WHERE id = %s
+                """,
+                (_PENDING, error, task_id),
+            )
 
     def retry_failed(self) -> int:
         """Recoloca todas as tarefas com status 'failed' de volta na fila.
@@ -194,16 +231,12 @@ class ExecutionQueue:
         Returns:
             Número de tarefas reenfileiradas.
         """
-        count = 0
-        for task in self._tasks:
-            if task["status"] == _FAILED:
-                task["status"] = _PENDING
-                task["error"]  = None
-                self._queue.append(task["id"])
-                count += 1
-        if count:
-            self._save()
-        return count
+        with connect(self._dsn) as conn:
+            rows = conn.execute(
+                "UPDATE tasks SET status = %s, error = NULL WHERE status = %s RETURNING id",
+                (_PENDING, _FAILED),
+            ).fetchall()
+        return len(rows)
 
     # ------------------------------------------------------------------
     # Consultas de estado
@@ -211,84 +244,58 @@ class ExecutionQueue:
 
     def stats(self) -> dict[str, int]:
         """Retorna contagem de tarefas por status."""
-        counts: dict[str, int] = {
-            _PENDING: 0, _RUNNING: 0, _DONE: 0, _FAILED: 0, _ABANDONED: 0,
-        }
-        for task in self._tasks:
-            counts[task["status"]] += 1
+        counts: dict[str, int] = dict.fromkeys(_ALL_STATUSES, 0)
+        with connect(self._dsn) as conn:
+            rows = conn.execute("SELECT status, COUNT(*) AS n FROM tasks GROUP BY status").fetchall()
+        for row in rows:
+            counts[row["status"]] = row["n"]
         return counts
 
     def pending(self) -> list[dict]:
         """Retorna todas as tarefas com status 'pending'."""
-        return [t for t in self._tasks if t["status"] == _PENDING]
+        with connect(self._dsn) as conn:
+            return conn.execute(
+                f"SELECT {_TASK_COLUMNS} FROM tasks WHERE status = %s ORDER BY id", (_PENDING,)
+            ).fetchall()
 
     def done(self) -> list[dict]:
         """Retorna todas as tarefas concluídas."""
-        return [t for t in self._tasks if t["status"] == _DONE]
+        with connect(self._dsn) as conn:
+            return conn.execute(
+                f"SELECT {_TASK_COLUMNS} FROM tasks WHERE status = %s ORDER BY id", (_DONE,)
+            ).fetchall()
+
+    def is_empty(self) -> bool:
+        """True se a fila não tiver nenhuma tarefa (nunca gerada, ou resetada)."""
+        with connect(self._dsn) as conn:
+            row = conn.execute("SELECT NOT EXISTS (SELECT 1 FROM tasks) AS empty").fetchone()
+        return row["empty"]
+
+    def reset(self) -> None:
+        """Apaga todas as tarefas e resultados — começa a fila do zero.
+
+        Substitui o antigo ``queue_path.unlink()``. Reinicia a contagem de
+        IDs (``RESTART IDENTITY``); ``CASCADE`` também limpa ``task_results``.
+        """
+        with connect(self._dsn) as conn:
+            conn.execute("TRUNCATE tasks RESTART IDENTITY CASCADE")
 
     def __len__(self) -> int:
         """Número total de tarefas na fila (qualquer status)."""
-        return len(self._tasks)
+        with connect(self._dsn) as conn:
+            row = conn.execute("SELECT COUNT(*) AS n FROM tasks").fetchone()
+        return row["n"]
 
     def __iter__(self) -> Iterator[dict]:
         """Itera sobre todas as tarefas (qualquer status)."""
-        return iter(self._tasks)
+        with connect(self._dsn) as conn:
+            rows = conn.execute(f"SELECT {_TASK_COLUMNS} FROM tasks ORDER BY id").fetchall()
+        return iter(rows)
 
     def __repr__(self) -> str:
         s = self.stats()
         return (
-            f"ExecutionQueue(total={len(self)}, "
+            f"ExecutionQueue(total={sum(s.values())}, "
             f"pending={s[_PENDING]}, running={s[_RUNNING]}, "
             f"done={s[_DONE]}, failed={s[_FAILED]}, abandoned={s[_ABANDONED]})"
         )
-
-    # ------------------------------------------------------------------
-    # Persistência
-    # ------------------------------------------------------------------
-
-    def _set_status(
-        self,
-        task_id: int,
-        status: str,
-        result: dict | None = None,
-        error: str | None = None,
-    ) -> None:
-        task           = self._tasks[self._id_to_idx[task_id]]
-        task["status"] = status
-        if result is not None:
-            task["result"] = result
-        if error is not None:
-            task["error"] = error
-        self._save()
-
-    def _save(self) -> None:
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self._path.with_suffix(".tmp")
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(self._tasks, f, indent=2, ensure_ascii=False)
-            f.flush()
-            os.fsync(f.fileno())
-        tmp.replace(self._path)
-
-    def _load(self) -> None:
-        with open(self._path, encoding="utf-8") as f:
-            self._tasks = json.load(f)
-
-        # Compatibilidade retroativa: garante campos novos em tasks antigas
-        for task in self._tasks:
-            task.setdefault("retry_count",      0)
-            task.setdefault("abandoned_reason", None)
-
-        # Constrói o mapa task_id → índice (suporta start_id > 0)
-        self._id_to_idx = {t["id"]: i for i, t in enumerate(self._tasks)}
-
-        # Reconstrói o deque com os IDs pendentes (na ordem original)
-        self._queue = deque(
-            t["id"] for t in self._tasks if t["status"] == _PENDING
-        )
-
-        # Tarefas interrompidas em "running" voltam para pending (auto-recuperação)
-        for task in self._tasks:
-            if task["status"] == _RUNNING:
-                task["status"] = _PENDING
-                self._queue.appendleft(task["id"])

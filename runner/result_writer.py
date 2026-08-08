@@ -1,237 +1,177 @@
 """
-Gerenciamento incremental dos arquivos de resultado de benchmark.
+Gerenciamento dos resultados de benchmark no Postgres de controle.
 
-Cada tarefa da fila produz um arquivo JSON em:
-    results/benchmark_results/{tier}/{combination}/task_{id}.json
+Cada tarefa da fila produz uma linha em ``task_results`` (ver db/schema.sql).
+A linha é criada vazia quando a tarefa inicia e preenchida incrementalmente
+à medida que queries terminam, permitindo que a interface web exiba
+progresso em tempo real mesmo que o processo seja interrompido.
 
-O arquivo é criado vazio quando a tarefa inicia e preenchido
-incrementalmente à medida que queries terminam, permitindo que a
-interface web exiba progresso em tempo real mesmo que o processo
-seja interrompido.
+Substitui o antigo esquema de um arquivo JSON por tarefa
+(``data/raw/{tier}/{combination}/task_{id}.json``) — a escrita atômica
+incremental agora é responsabilidade nativa do Postgres (cada UPDATE é uma
+transação), não precisa mais de tmp+fsync+rename nem de chmod pra "travar"
+o arquivo final. Status/motivo de abandono ficam só em ``tasks`` (via
+``ExecutionQueue``) — ``task_results`` guarda exclusivamente o conteúdo do
+benchmark, não o estado do ciclo de vida da tarefa.
+
+Dois campos deliberadamente NÃO são persistidos aqui, porque o pipeline de
+ML nunca os lê (ver docs/decisoes-de-engenharia.md e a limpeza dos datasets
+de coleta) e eram os maiores responsáveis por inchar os antigos arquivos:
+    - ``pg_stats`` (dump de configurações/estatísticas do Postgres por tarefa)
+    - ``hw_metrics.samples`` (série temporal bruta — só o resumo agregado é salvo)
 
 Funções
 -------
-    init_task_file(task, started_at, results_dir)
-        Cria o arquivo da tarefa com seções vazias para TPC-H e TPC-DS.
+    init_task_result(task, started_at)
+        Cria a linha da tarefa com seções vazias para TPC-H e TPC-DS.
 
-    append_query_result(out_path, query_result, benchmark_key)
+    append_query_result(task_id, query_result, benchmark_key)
         Adiciona o resultado de uma query ao benchmark correto.
 
-    finalize_benchmark_section(out_path, benchmark_key, result)
-        Preenche summary, pg_stats e total_ms da seção do benchmark.
+    finalize_benchmark_section(task_id, benchmark_key, result)
+        Preenche summary e total_ms da seção do benchmark.
 
-    finalize_task_file(out_path, finished_at, duration_s)
-        Marca a tarefa como done e registra o tempo total.
+    save_hw_metrics(task_id, hw_metrics)
+        Salva o resumo agregado de métricas de hardware.
 
-    task_path(task, results_dir)
-        Retorna o Path do arquivo de resultado de uma tarefa.
+    finalize_task_result(task_id, finished_at, duration_s)
+        Registra o tempo total da tarefa (sucesso ou abandono).
 """
 
-import json
-import os
-import stat
-from pathlib import Path
+from psycopg.types.json import Jsonb
+
+from utils.db import connect
+
+_EMPTY_BENCH = {"queries": [], "summary": None, "total_ms": None, "n_success": 0, "n_failed": 0}
 
 
-def _lock_file(path: Path) -> None:
-    """Torna o arquivo somente-leitura para todos (444)."""
-    path.chmod(stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
-
-
-def _unlock_file(path: Path) -> None:
-    """Restaura permissão de escrita para o dono (644)."""
-    path.chmod(stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-
-
-def _atomic_write(path: Path, payload: dict) -> None:
-    """Escreve payload JSON em path de forma atômica (tmp + rename).
-
-    Garante que o arquivo nunca fique em estado corrompido/truncado,
-    mesmo que o processo seja interrompido no meio da escrita.
-    """
-    tmp = path.with_suffix(".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2, ensure_ascii=False, default=str)
-        f.flush()
-        os.fsync(f.fileno())
-    tmp.replace(path)
-
-
-def task_path(task: dict, results_dir: Path) -> Path:
-    """Retorna o caminho esperado do arquivo de resultado de uma tarefa.
+def init_task_result(task: dict, started_at: str, dsn: str | None = None) -> int:
+    """Cria a linha de resultado da tarefa com seções vazias.
 
     Args:
-        task:        Dict da tarefa (campos: id, tier, combination).
-        results_dir: Diretório raiz de resultados (ex: ``results/benchmark_results``).
+        task:       Dict da tarefa (usa apenas ``id``).
+        started_at: Timestamp ISO 8601 de início.
+        dsn:        Connection string do banco de controle.
 
     Returns:
-        Path absoluto do arquivo JSON da tarefa.
+        O próprio ``task["id"]`` — identifica a tarefa nas demais chamadas
+        (substitui o antigo ``out_path``).
     """
-    return results_dir / task["tier"] / task["combination"] / f"task_{task['id']}.json"
+    with connect(dsn) as conn:
+        conn.execute(
+            """
+            INSERT INTO task_results (task_id, started_at, tpc_h, tpc_ds)
+            VALUES (%(id)s, %(started_at)s, %(bench)s, %(bench)s)
+            ON CONFLICT (task_id) DO UPDATE
+                SET started_at = EXCLUDED.started_at,
+                    tpc_h = EXCLUDED.tpc_h, tpc_ds = EXCLUDED.tpc_ds
+            """,
+            {"id": task["id"], "started_at": started_at, "bench": Jsonb(dict(_EMPTY_BENCH))},
+        )
+    return task["id"]
 
 
-def init_task_file(task: dict, started_at: str, results_dir: Path) -> Path:
-    """Cria o arquivo da tarefa com seções separadas para TPC-H e TPC-DS.
-
-    As seções de benchmark começam vazias e são preenchidas durante
-    a execução via ``append_query_result`` e ``finalize_benchmark_section``.
-
-    Args:
-        task:        Dict da tarefa.
-        started_at:  Timestamp ISO 8601 de início.
-        results_dir: Diretório raiz de resultados.
-
-    Returns:
-        Path do arquivo criado.
-    """
-    out_path = task_path(task, results_dir)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-    empty_bench = {
-        "queries":   [],
-        "summary":   None,
-        "pg_stats":  None,
-        "total_ms":  None,
-        "n_success": 0,
-        "n_failed":  0,
-    }
-
-    payload = {
-        "task_id":     task["id"],
-        "combination": task["combination"],
-        "tier":        task["tier"],
-        "pg_config":   task["config"],
-        "started_at":  started_at,
-        "finished_at": None,
-        "duration_s":  None,
-        "status":      "running",
-        "tpc_h":       dict(empty_bench),
-        "tpc_ds":      dict(empty_bench),
-        "hw_metrics":  None,
-    }
-
-    _atomic_write(out_path, payload)
-    return out_path
+def _load_bench(conn, task_id: int, benchmark_key: str) -> dict:
+    row = conn.execute(
+        f"SELECT {benchmark_key} AS bench FROM task_results WHERE task_id = %s", (task_id,)
+    ).fetchone()
+    return row["bench"]
 
 
 def append_query_result(
-    out_path: Path,
+    task_id: int,
     query_result: dict,
     benchmark_key: str,
+    dsn: str | None = None,
 ) -> None:
     """Adiciona o resultado de uma query ao benchmark correto.
 
-    Atualiza ``n_success`` / ``n_failed`` atomicamente após cada query.
-    Chamado via query_callback durante ``run_all_queries()``.
+    Atualiza ``n_success`` / ``n_failed`` a cada chamada. Chamado via
+    query_callback durante ``run_all_queries()``.
 
     Args:
-        out_path:      Path do arquivo da tarefa.
+        task_id:       ID da tarefa (retornado por ``init_task_result``).
         query_result:  Dict retornado por ``run_query()``.
         benchmark_key: ``"tpc_h"`` ou ``"tpc_ds"``.
+        dsn:           Connection string do banco de controle.
     """
-    with open(out_path, encoding="utf-8") as f:
-        payload = json.load(f)
-
-    payload[benchmark_key]["queries"].append(query_result)
-    if query_result.get("success"):
-        payload[benchmark_key]["n_success"] += 1
-    else:
-        payload[benchmark_key]["n_failed"] += 1
-
-    _atomic_write(out_path, payload)
+    with connect(dsn) as conn:
+        bench = _load_bench(conn, task_id, benchmark_key)
+        bench["queries"].append(query_result)
+        if query_result.get("success"):
+            bench["n_success"] += 1
+        else:
+            bench["n_failed"] += 1
+        conn.execute(
+            f"UPDATE task_results SET {benchmark_key} = %s WHERE task_id = %s",
+            (Jsonb(bench), task_id),
+        )
 
 
 def finalize_benchmark_section(
-    out_path: Path,
+    task_id: int,
     benchmark_key: str,
     result: dict,
+    dsn: str | None = None,
 ) -> None:
-    """Preenche summary, pg_stats e total_ms da seção do benchmark.
+    """Preenche summary e total_ms da seção do benchmark.
 
-    Chamado após ``run_benchmark()`` completar para uma das fases
-    (TPC-H ou TPC-DS).
+    ``pg_stats`` (se presente em ``result``) é ignorado de propósito — nunca
+    é lido pelo pipeline de ML e só infla o tamanho do registro.
 
     Args:
-        out_path:      Path do arquivo da tarefa.
+        task_id:       ID da tarefa.
         benchmark_key: ``"tpc_h"`` ou ``"tpc_ds"``.
         result:        Dict retornado por ``run_benchmark()``.
+        dsn:           Connection string do banco de controle.
     """
-    with open(out_path, encoding="utf-8") as f:
-        payload = json.load(f)
+    with connect(dsn) as conn:
+        bench = _load_bench(conn, task_id, benchmark_key)
+        bench["summary"]  = result.get("summary", {})
+        bench["total_ms"] = round(result["total_ms"], 3)
+        conn.execute(
+            f"UPDATE task_results SET {benchmark_key} = %s WHERE task_id = %s",
+            (Jsonb(bench), task_id),
+        )
 
-    payload[benchmark_key]["summary"]  = result.get("summary", {})
-    payload[benchmark_key]["pg_stats"] = result.get("pg_stats", {})
-    payload[benchmark_key]["total_ms"] = round(result["total_ms"], 3)
 
-    _atomic_write(out_path, payload)
+def save_hw_metrics(task_id: int, hw_metrics: dict, dsn: str | None = None) -> None:
+    """Salva o resumo agregado de métricas de hardware.
 
-
-def save_hw_metrics(out_path: Path, hw_metrics: dict) -> None:
-    """Salva as métricas de hardware coletadas durante a tarefa.
+    Só ``hw_metrics["summary"]`` é persistido — as amostras brutas
+    (``hw_metrics["samples"]``) nunca são lidas por nada no projeto.
 
     Args:
-        out_path:   Path do arquivo da tarefa.
+        task_id:    ID da tarefa.
         hw_metrics: Dict retornado por ``MetricsCollector.stop()``.
+        dsn:        Connection string do banco de controle.
     """
-    with open(out_path, encoding="utf-8") as f:
-        payload = json.load(f)
-    payload["hw_metrics"] = hw_metrics
-    _atomic_write(out_path, payload)
+    with connect(dsn) as conn:
+        conn.execute(
+            "UPDATE task_results SET hw_metrics = %s WHERE task_id = %s",
+            (Jsonb({"summary": hw_metrics.get("summary")}), task_id),
+        )
 
 
-def finalize_task_file(
-    out_path: Path,
+def finalize_task_result(
+    task_id: int,
     finished_at: str,
     duration_s: float,
+    dsn: str | None = None,
 ) -> None:
-    """Marca a tarefa como concluída e registra o tempo total.
+    """Registra o momento e a duração final da tarefa (sucesso ou abandono).
+
+    O status/motivo do ciclo de vida (done/abandoned/reason/error) fica só
+    em ``tasks`` — ver ``ExecutionQueue.mark_done`` / ``mark_abandoned``.
 
     Args:
-        out_path:    Path do arquivo da tarefa.
-        finished_at: Timestamp ISO 8601 de conclusão.
+        task_id:     ID da tarefa.
+        finished_at: Timestamp ISO 8601 de conclusão/abandono.
         duration_s:  Duração total da tarefa em segundos.
+        dsn:         Connection string do banco de controle.
     """
-    with open(out_path, encoding="utf-8") as f:
-        payload = json.load(f)
-
-    payload["finished_at"] = finished_at
-    payload["duration_s"]  = round(duration_s, 3)
-    payload["status"]      = "done"
-
-    _atomic_write(out_path, payload)
-    _lock_file(out_path)
-
-
-def abandon_task_file(
-    out_path: Path,
-    finished_at: str,
-    duration_s: float,
-    reason: str,
-    error: str,
-) -> None:
-    """Marca a tarefa como abandonada com razão e mensagem de erro.
-
-    Garante que o arquivo de resultado reflita o estado real da tarefa
-    em vez de ficar preso em "running" para sempre.
-
-    Args:
-        out_path:    Path do arquivo da tarefa.
-        finished_at: Timestamp ISO 8601 do momento do abandono.
-        duration_s:  Tempo decorrido desde o início da tarefa (segundos).
-        reason:      Categoria do abandono:
-                       ``"timeout"``        — limite de tempo do tier excedido
-                       ``"invalid_config"`` — PostgreSQL rejeitou a configuração
-                       ``"max_retries"``    — falha de infraestrutura após 3 tentativas
-        error:       Mensagem de erro completa (traceback ou descrição).
-    """
-    with open(out_path, encoding="utf-8") as f:
-        payload = json.load(f)
-
-    payload["finished_at"]      = finished_at
-    payload["duration_s"]       = round(duration_s, 3)
-    payload["status"]           = "abandoned"
-    payload["abandoned_reason"] = reason
-    payload["error"]            = error
-
-    _atomic_write(out_path, payload)
-    _lock_file(out_path)
+    with connect(dsn) as conn:
+        conn.execute(
+            "UPDATE task_results SET finished_at = %s, duration_s = %s WHERE task_id = %s",
+            (finished_at, round(duration_s, 3), task_id),
+        )

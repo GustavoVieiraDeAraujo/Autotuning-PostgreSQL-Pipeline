@@ -1,4 +1,4 @@
-.PHONY: setup generate run build-images docs docs-build clean-results features train evaluate tune recommend cost-analysis
+.PHONY: setup generate run build-images docs docs-build clean-results features train evaluate tune recommend cost-analysis db-up db-down db-reset
 
 # ----------------------------------------------------------------------------
 # Setup — cria ambiente e instala pacotes (inclui pip install -e .)
@@ -11,6 +11,25 @@ setup:
 	.venv/bin/pip install -e .
 	@echo ""
 	@echo "Ambiente pronto."
+
+# ----------------------------------------------------------------------------
+# Banco de controle (fila + resultados) — Postgres em container dedicado,
+# separado dos containers Postgres efêmeros dos benchmarks.
+# ----------------------------------------------------------------------------
+
+db-up:
+	docker compose -f db/docker-compose.yml up -d
+	@echo "Aguardando Postgres ficar pronto..."
+	@until docker compose -f db/docker-compose.yml exec -T queue-db pg_isready -U $${QUEUE_DB_USER:-autotuning} >/dev/null 2>&1; do sleep 1; done
+	@echo "Banco de controle pronto em localhost:$${QUEUE_DB_PORT:-5433}."
+
+db-down:
+	docker compose -f db/docker-compose.yml down
+
+db-reset:
+	@echo "ATENÇÃO: isso apaga toda a fila e os resultados coletados."
+	docker compose -f db/docker-compose.yml down -v
+	$(MAKE) db-up
 
 # ----------------------------------------------------------------------------
 # Imagens Docker (executar antes da primeira rodada)
@@ -53,8 +72,9 @@ docs-build:
 # ----------------------------------------------------------------------------
 
 clean-results:
-	@echo "Removendo resultados e fila..."
-	rm -rf data/raw data/queue.json data/.runner.lock logs/
+	@echo "Removendo resultados e fila (Postgres) e logs..."
+	.venv/bin/python -c "from taskqueue import ExecutionQueue; import os; ExecutionQueue(os.environ.get('DATABASE_URL', 'postgresql://autotuning:autotuning@localhost:5433/autotuning_queue')).reset()"
+	rm -rf logs/
 	@echo "Feito."
 
 # ----------------------------------------------------------------------------

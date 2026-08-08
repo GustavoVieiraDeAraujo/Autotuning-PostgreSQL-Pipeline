@@ -1,10 +1,7 @@
 # Aplicacao
 psutil>=5.9.0
 docker>=7.0.0
-uvicorn>=0.20.0
-fastapi>=0.100.0
-aiofiles>=23.0.0          # necessário para StaticFiles do FastAPI
-jinja2>=3.0.0             # necessário para Jinja2Templates do FastAPI
+psycopg[binary]>=3.1      # fila e resultados no Postgres de controle (db/)
 
 # ML — extração de features e treinamento
 numpy>=1.26.0

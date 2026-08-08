@@ -33,7 +33,6 @@ output/
 
 data/raw/
 data/models/
-data/queue.json
 data/.runner.lock
 
 # logs gerados em runtime

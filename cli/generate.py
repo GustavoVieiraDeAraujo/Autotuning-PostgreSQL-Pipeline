@@ -1,8 +1,9 @@
 """
 Gerador de configurações PostgreSQL — ponto de entrada.
 
-Gera todas as 7 combinações de etapas e popula a fila de execução
-em output/queue.json.
+Gera todas as 7 combinações de etapas e popula a fila de execução no
+Postgres de controle (ver db/schema.sql — variável de ambiente
+``DATABASE_URL``, ver utils/db.py).
 
 Uso direto
 ----------
@@ -22,9 +23,8 @@ import sys
 import time
 from pathlib import Path
 
-_ROOT       = Path(__file__).parent.parent
-_QUEUE_PATH = _ROOT / "data" / "queue.json"
-_LOG_PATH   = _ROOT / "logs" / "generate.log"
+_ROOT     = Path(__file__).parent.parent
+_LOG_PATH = _ROOT / "logs" / "generate.log"
 
 from sampler import generate_configs
 from sampler.display import print_docker_table, print_summary_table
@@ -85,19 +85,19 @@ def main(argv: list[str] | None = None) -> None:
 
 
 def _generate(args: argparse.Namespace) -> None:
-    if _QUEUE_PATH.exists():
-        existing = ExecutionQueue(_QUEUE_PATH)
-        stats    = existing.stats()
-        blocking = stats["pending"] + stats["running"]
-        if blocking > 0:
-            print(
-                f"ERRO: A fila já contém {blocking} tarefa(s) pendente(s)/em execução.\n"
-                f"  Execute o benchmark antes de gerar novas configs.\n"
-                f"  Estado atual: {existing}"
-            )
-            raise SystemExit(1)
-        _QUEUE_PATH.unlink()
-        print(f"Fila anterior resetada: {_QUEUE_PATH}")
+    queue    = ExecutionQueue()
+    stats    = queue.stats()
+    blocking = stats["pending"] + stats["running"]
+    if blocking > 0:
+        print(
+            f"ERRO: A fila já contém {blocking} tarefa(s) pendente(s)/em execução.\n"
+            f"  Execute o benchmark antes de gerar novas configs.\n"
+            f"  Estado atual: {queue}"
+        )
+        raise SystemExit(1)
+    if not queue.is_empty():
+        queue.reset()
+        print("Fila anterior resetada.")
 
     with open(DOCKER_CONFIG_PATH, encoding="utf-8") as f:
         docker = json.load(f)
@@ -123,11 +123,11 @@ def _generate(args: argparse.Namespace) -> None:
     print_summary_table(
         all_results,
         time.perf_counter() - t0,
-        str(_QUEUE_PATH.relative_to(_ROOT)),
+        "Postgres (banco de controle — ver DATABASE_URL)",
     )
 
     queue = ExecutionQueue.from_dict(
-        all_results, _QUEUE_PATH,
+        all_results,
         repetitions=args.repetitions,
     )
     print(queue)

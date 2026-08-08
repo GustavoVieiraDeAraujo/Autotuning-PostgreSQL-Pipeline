@@ -1,0 +1,35 @@
+# Postgres de controle da pipeline (fila + resultados) - NAO confundir com
+# os containers Postgres efemeros usados pelos benchmarks TPC-H/TPC-DS
+# (esses sao criados/destruidos por tarefa via benchmarks/container.py).
+# Este e' um unico banco persistente, sempre ligado, que guarda o estado
+# de execucao da fila e os resultados coletados.
+#
+# Uso:
+#   make db-up      # sobe o container (aplica db/schema.sql na 1a vez)
+#   make db-down    # para o container (dado persiste no volume)
+#   make db-reset   # apaga o volume e recria do zero (DESTRUTIVO)
+
+services:
+  queue-db:
+    image: postgres:17
+    container_name: autotuning-queue-db
+    environment:
+      POSTGRES_USER: ${QUEUE_DB_USER:-autotuning}
+      POSTGRES_PASSWORD: ${QUEUE_DB_PASSWORD:-autotuning}
+      POSTGRES_DB: ${QUEUE_DB_NAME:-autotuning_queue}
+    ports:
+      # Porta 5433 (nao 5432) de proposito - evita colidir com um Postgres
+      # local do host e deixa claro que este nao e' um dos containers de
+      # benchmark efemeros.
+      - "${QUEUE_DB_PORT:-5433}:5432"
+    volumes:
+      - queue_db_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${QUEUE_DB_USER:-autotuning}"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  queue_db_data:

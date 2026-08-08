@@ -1,11 +1,13 @@
 """
-task_queue
-==========
-Fila de execução persistente para testes sequenciais de configurações PostgreSQL.
+taskqueue
+=========
+Fila de execução persistente (Postgres) para testes sequenciais de
+configurações PostgreSQL. Suporta múltiplos workers concorrentes,
+inclusive em máquinas diferentes (ver db/schema.sql).
 
-    from task_queue import ExecutionQueue
+    from taskqueue import ExecutionQueue
 
-    queue = ExecutionQueue("output/queue.json")
+    queue = ExecutionQueue()      # usa DATABASE_URL (utils/db.py)
     task  = queue.next()          # next pending task
     queue.mark_done(task["id"], result)
 """
