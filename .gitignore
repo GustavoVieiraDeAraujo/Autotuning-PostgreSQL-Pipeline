@@ -1,0 +1,43 @@
+# Ambiente virtual
+.venv/
+
+# Documentação gerada
+site/
+documentacao/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ── output/ — diretório legado (substituído por data/ e logs/)  ──────────
+output/
+
+# ── Gerado por pip install -e . ───────────────────────────────────────────
+*.egg-info/
+
+# ── data/ — estrutura CCDS (Cookiecutter Data Science) ───────────────────
+# data/raw/       → benchmark results JSON (2.2 GB, não versionado)
+# data/models/    → modelos treinados XGBoost (gerados por make train)
+# data/processed/ → features.csv VERSIONADO (984 KB, reproduz o ML)
+
+data/raw/
+data/models/
+data/queue.json
+data/.runner.lock
+
+# logs gerados em runtime
+logs/*.log
+
+# Configurações locais do Claude
+.claude/settings.local.json

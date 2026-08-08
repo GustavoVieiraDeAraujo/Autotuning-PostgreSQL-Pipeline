@@ -1,0 +1,50 @@
+{
+  "hash_mem_multiplier": {
+    "type": "float",
+    "choices": { "mode": "range", "values": { "min": 1.0, "max": 4.0 } }
+  },
+  "enable_hashjoin": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["on", "off"] }
+  },
+  "enable_mergejoin": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["on", "off"] }
+  },
+  "parallel_setup_cost": {
+    "type": "int",
+    "choices": { "mode": "range", "values": { "min": 100, "max": 2000 } }
+  },
+  "parallel_tuple_cost": {
+    "type": "float",
+    "choices": { "mode": "range", "values": { "min": 0.01, "max": 0.5 } }
+  },
+  "min_parallel_table_scan_size": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["8MB", "32MB", "128MB", "512MB", "1GB"] }
+  },
+  "min_parallel_index_scan_size": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["1MB", "4MB", "16MB", "64MB", "256MB", "512MB"] }
+  },
+  "join_collapse_limit": {
+    "type": "int",
+    "choices": { "mode": "range", "values": { "min": 4, "max": 16 } }
+  },
+  "from_collapse_limit": {
+    "type": "int",
+    "choices": { "mode": "range", "values": { "min": 4, "max": 16 } }
+  },
+  "cpu_tuple_cost": {
+    "type": "float",
+    "choices": { "mode": "range", "values": { "min": 0.001, "max": 0.01 } }
+  },
+  "cpu_index_tuple_cost": {
+    "type": "float",
+    "choices": { "mode": "range", "values": { "min": 0.001, "max": 0.005 } }
+  },
+  "cpu_operator_cost": {
+    "type": "float",
+    "choices": { "mode": "range", "values": { "min": 0.0005, "max": 0.0025 } }
+  }
+}

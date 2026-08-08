@@ -1,0 +1,23 @@
+{
+  "low": {
+    "cpu": 2,
+    "memory_mb": 2048,
+    "memory_swap_mb": 2048,
+    "shm_size_mb": 576,
+    "scale_factor": 1
+  },
+  "medium": {
+    "cpu": 4,
+    "memory_mb": 4096,
+    "memory_swap_mb": 4096,
+    "shm_size_mb": 1152,
+    "scale_factor": 2
+  },
+  "high": {
+    "cpu": 6,
+    "memory_mb": 5120,
+    "memory_swap_mb": 5120,
+    "shm_size_mb": 1536,
+    "scale_factor": 4
+  }
+}

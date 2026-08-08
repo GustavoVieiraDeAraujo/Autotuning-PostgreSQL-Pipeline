@@ -1,0 +1,54 @@
+{
+  "jit": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": [0, 1] }
+  },
+  "random_page_cost": {
+    "type": "float",
+    "choices": { "mode": "range", "values": { "min": 1.0, "max": 4.0 } }
+  },
+  "default_statistics_target": {
+    "type": "int",
+    "choices": { "mode": "range", "values": { "min": 100, "max": 400 } }
+  },
+  "max_parallel_workers": {
+    "type": "int",
+    "choices": { "mode": "range", "values": { "min": 1, "max": 4 } }
+  },
+  "max_parallel_workers_per_gather": {
+    "type": "int",
+    "choices": { "mode": "range", "values": { "min": 1, "max": 2 } }
+  },
+  "shared_buffers": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["768MB", "896MB", "1024MB"] }
+  },
+  "effective_cache_size": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["2GB", "2560MB", "3GB"] }
+  },
+  "work_mem": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["16MB", "32MB", "64MB", "128MB"] }
+  },
+  "enable_hashagg": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["on", "off"] }
+  },
+  "enable_bitmapscan": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["on", "off"] }
+  },
+  "enable_nestloop": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["on", "off"] }
+  },
+  "enable_parallel_hash": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["on", "off"] }
+  },
+  "enable_sort": {
+    "type": "categorical",
+    "choices": { "mode": "discrete", "values": ["on", "off"] }
+  }
+}

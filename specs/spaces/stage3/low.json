@@ -1,0 +1,82 @@
+{
+  "enable_memoize": {
+    "type": "categorical",
+    "choices": {
+      "mode": "discrete",
+      "values": [
+        "on",
+        "off"
+      ]
+    }
+  },
+  "enable_gathermerge": {
+    "type": "categorical",
+    "choices": {
+      "mode": "discrete",
+      "values": [
+        "on",
+        "off"
+      ]
+    }
+  },
+  "enable_incremental_sort": {
+    "type": "categorical",
+    "choices": {
+      "mode": "discrete",
+      "values": [
+        "on",
+        "off"
+      ]
+    }
+  },
+  "enable_material": {
+    "type": "categorical",
+    "choices": {
+      "mode": "discrete",
+      "values": [
+        "on",
+        "off"
+      ]
+    }
+  },
+  "enable_indexscan": {
+    "type": "categorical",
+    "choices": {
+      "mode": "discrete",
+      "values": [
+        "on",
+        "off"
+      ]
+    }
+  },
+  "enable_indexonlyscan": {
+    "type": "categorical",
+    "choices": {
+      "mode": "discrete",
+      "values": [
+        "on",
+        "off"
+      ]
+    }
+  },
+  "enable_parallel_append": {
+    "type": "categorical",
+    "choices": {
+      "mode": "discrete",
+      "values": [
+        "on",
+        "off"
+      ]
+    }
+  },
+  "parallel_leader_participation": {
+    "type": "categorical",
+    "choices": {
+      "mode": "discrete",
+      "values": [
+        "on",
+        "off"
+      ]
+    }
+  }
+}

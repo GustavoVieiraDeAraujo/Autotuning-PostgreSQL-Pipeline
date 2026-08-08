@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autotuning-postgresql"
+version = "0.1.0"
+description = "Meta-modelo para recomendação de configurações custo-efetivas de PostgreSQL em workloads analíticos"
+authors = [
+    { name = "Gustavo Vieira de Araujo" },
+]
+readme = "README.md"
+requires-python = ">=3.12"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "ml*",
+    "sampler*",
+    "taskqueue*",
+    "benchmarks*",
+    "runner*",
+    "monitoring*",
+    "utils*",
+    "cli*",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.ruff]
+line-length = 99
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ml", "sampler", "taskqueue", "benchmarks", "runner", "monitoring", "utils"]
+force-sort-within-sections = true

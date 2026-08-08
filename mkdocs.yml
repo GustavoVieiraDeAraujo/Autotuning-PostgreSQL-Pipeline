@@ -1,0 +1,92 @@
+site_name: TCC — Auto-Tuning PostgreSQL
+site_description: >
+  Documentação do projeto de TCC sobre ajuste automático de configurações
+  PostgreSQL com Latin Hypercube Sampling e benchmarks TPC-H e TPC-DS.
+site_author: Araujo
+docs_dir: docs
+site_dir: documentacao
+
+theme:
+  name: material
+  language: pt
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Modo escuro
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Modo claro
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search:
+      lang: pt
+
+nav:
+  - Início: index.md
+  - Arquitetura: arquitetura.md
+  - Executando o Projeto: execucao.md
+
+  - Geração de Configurações:
+    - Visão Geral: geracao/index.md
+    - Latin Hypercube Sampling: geracao/lhs.md
+    - Stages e Parâmetros: geracao/estagios.md
+    - Restrições e Validação: geracao/restricoes.md
+
+  - Benchmarks:
+    - Visão Geral: benchmarks/index.md
+    - Imagens Docker: benchmarks/imagens.md
+    - Containers PostgreSQL: benchmarks/containers.md
+    - Execução de Queries: benchmarks/queries.md
+
+  - Fila de Execução: fila/index.md
+  - Monitoramento de Hardware: monitoramento.md
+  - Formato dos Resultados: resultado.md
+  - Decisões de Engenharia: decisoes-de-engenharia.md
+
+  - Referência da API:
+    - pg_sampler/: api/pg_sampler.md
+    - benchmarks/: api/benchmarks.md
+    - runner/: api/runner.md
+    - utils/: api/utils.md

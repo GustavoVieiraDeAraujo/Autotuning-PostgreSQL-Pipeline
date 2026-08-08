@@ -1,0 +1,23 @@
+# Aplicacao
+psutil>=5.9.0
+docker>=7.0.0
+uvicorn>=0.20.0
+fastapi>=0.100.0
+aiofiles>=23.0.0          # necessário para StaticFiles do FastAPI
+jinja2>=3.0.0             # necessário para Jinja2Templates do FastAPI
+
+# ML — extração de features e treinamento
+numpy>=1.26.0
+pandas>=2.2.0
+scipy>=1.12.0
+scikit-learn>=1.4.0
+xgboost>=2.0.0
+optuna>=3.6.0
+shap>=0.44.0
+
+# Documentação
+mkdocs>=1.6.0
+mkdocs-material>=9.5.0
+pymdown-extensions>=10.7.0
+mkdocstrings[python]>=0.25.0
+mkdocs-mermaid2-plugin>=1.1.0
