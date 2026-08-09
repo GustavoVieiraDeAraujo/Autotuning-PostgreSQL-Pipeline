@@ -44,9 +44,11 @@ ML. Contém:
 - `docs/` — documentação (MkDocs) de arquitetura, decisões de engenharia e
   resultados
 - `data/processed/features.csv` — dataset de features já extraído, versionado
-- `output_backup_*_enxuto/` — resultados de benchmark já coletados e limpos,
-  usados para reproduzir a extração de features e o treinamento sem precisar
-  rodar os benchmarks novamente
+- `data/raw/rodada{1,2}/` — resultados de benchmark reais já coletados e
+  "enxutos" (só os campos que `ml/extract_features.py` de fato lê, ~5,5MB
+  no total vs. 2,2GB dos JSONs originais), versionados de propósito para
+  reproduzir a extração de features e o treinamento sem precisar rodar
+  nenhum benchmark novamente (`make features && make train`)
 
 ## Setup
 
