@@ -27,11 +27,19 @@ output/
 *.egg-info/
 
 # ── data/ — estrutura CCDS (Cookiecutter Data Science) ───────────────────
-# data/raw/       → benchmark results JSON (2.2 GB, não versionado)
+# data/raw/       → benchmark results JSON originais (2.2 GB, não versionados);
+#                   EXCEÇÃO: data/raw/rodada{1,2}/ são as versões "enxutas"
+#                   (~2,8 MB cada, só os campos que extract_features.py lê),
+#                   versionadas de propósito pra reproduzir o treino sem
+#                   precisar rodar nenhum benchmark de novo.
 # data/models/    → modelos treinados XGBoost (gerados por make train)
 # data/processed/ → features.csv VERSIONADO (984 KB, reproduz o ML)
 
-data/raw/
+data/raw/*
+!data/raw/rodada1/
+!data/raw/rodada1/**
+!data/raw/rodada2/
+!data/raw/rodada2/**
 data/models/
 data/.runner.lock
 
