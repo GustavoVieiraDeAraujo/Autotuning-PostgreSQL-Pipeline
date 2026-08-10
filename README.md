@@ -10,12 +10,16 @@
 ## Sumário
 
 - [Objetivo do projeto](#objetivo-do-projeto)
+- [Participantes](#participantes)
+- [Tecnologias](#tecnologias)
 - [Arquitetura: como funciona de ponta a ponta](#arquitetura-como-funciona-de-ponta-a-ponta)
 - [Ciclo de vida de uma tarefa, em detalhe](#ciclo-de-vida-de-uma-tarefa-em-detalhe)
 - [Pipeline de ML em detalhe](#pipeline-de-ml-em-detalhe)
 - [Resultados e análise](#resultados-e-análise)
 - [Limitações](#limitações)
-- [Setup e uso](#setup-e-uso)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Requisitos](#requisitos)
+- [Como Executar](#como-executar)
 - [Investigação final: sementes pro próximo TCC](#investigação-final-2026-08-09-sementes-pro-próximo-tcc)
 - [Escopo deste repositório](#escopo-deste-repositório)
 
@@ -61,6 +65,30 @@ ML. Contém:
   no total vs. 2,2GB dos JSONs originais), versionados de propósito para
   reproduzir a extração de features e o treinamento sem precisar rodar
   nenhum benchmark novamente (`make features && make train`)
+
+## Participantes
+
+| Nome | Matricula |
+|---|---|
+| Gustavo Vieira de Araujo | 211068440 |
+
+## Tecnologias
+
+| Tecnologia | Uso |
+|---|---|
+| Python 3.12 | Linguagem principal do pacote (`sampler`, `taskqueue`, `runner`, `monitoring`, `ml`, `cli`) |
+| psycopg | Cliente PostgreSQL usado pela fila de tarefas e pela persistência de resultados |
+| docker (SDK Python) | Sobe e derruba os containers efêmeros de benchmark |
+| psutil | Coleta de métricas de hardware (CPU, memória, disco) |
+| pandas, numpy, scipy | Manipulação de dados e cálculo de features |
+| scikit-learn | `KFold` e métricas auxiliares de avaliação |
+| XGBoost (`XGBRegressor` + `XGBRanker`) | Treino dos 4 especialistas e do ranker |
+| Optuna | Tuning de hiperparâmetros dos modelos |
+| SHAP | Análise de importância de features |
+| MkDocs + mkdocs-material | Documentação técnica versionada em `docs/` |
+| Docker | Isolamento dos benchmarks TPC-H/TPC-DS em containers efêmeros |
+| PostgreSQL 17 | Banco de controle da fila e banco benchmarcado dentro dos containers |
+| ruff | Lint e ordenação de imports |
 
 ## Arquitetura: como funciona de ponta a ponta
 
@@ -448,7 +476,39 @@ das principais ameaças à validade do trabalho:
   espaço de busca por não terem sinal nesse cenário. O meta-modelo e as
   conclusões deste TCC não se estendem a workloads OLTP ou mistos.
 
-## Setup e uso
+## Estrutura do Projeto
+
+| Diretório / Arquivo | Descrição |
+|---|---|
+| `sampler/` | Amostragem de espaços de configuração via Latin Hypercube Sampling |
+| `taskqueue/` | Fila de tarefas de benchmark sobre PostgreSQL, com claim atômico |
+| `runner/` | Execução dos benchmarks em containers Docker efêmeros |
+| `benchmarks/` | Definições, queries e build de imagem do TPC-H e TPC-DS |
+| `monitoring/` | Coleta de métricas de hardware durante a execução |
+| `utils/` | Utilitários compartilhados entre os módulos |
+| `cli/` | Scripts de linha de comando (`generate.py`, `prepare.py`, `run.py`) |
+| `ml/` | Extração de features, treino, avaliação, tuning e recomendação |
+| `specs/` | Especificações JSON dos espaços de configuração e dos recursos Docker por tier |
+| `db/` | Schema SQL e `docker-compose` do Postgres de controle |
+| `docs/` | Documentação MkDocs de arquitetura, decisões de engenharia e resultados |
+| `data/processed/features.csv` | Dataset de features já extraído, versionado |
+| `data/raw/rodada{1,2}/` | Resultados brutos de benchmark já coletados e enxutos |
+| `data/models/` | Modelos XGBoost treinados (`.ubj`) |
+| `notebooks/` | Notebooks de exploração |
+| `references/` | Material de referência bibliográfica |
+| `reports/` | Relatórios gerados (ablação, custo-efetividade, etc.) |
+| `scripts/` | Scripts auxiliares diversos |
+| `Makefile` | Alvos `make` para todo o ciclo de coleta e treino |
+
+## Requisitos
+
+| Dependência | Versão | Instalação |
+|---|---|---|
+| Python | 3.12+ | `make setup` (cria `.venv`, instala `requirements.txt` e o pacote via `pip install -e .`) |
+| Docker | Engine ativo | Necessário para `make build-images`, `make run` e `make db-up` |
+| PostgreSQL | 17 (via imagem Docker) | Provisionado automaticamente pelas imagens de benchmark e por `make db-up` |
+
+## Como Executar
 
 ```bash
 make setup          # cria .venv, instala requirements.txt e o pacote (pip install -e .)
@@ -534,3 +594,7 @@ repositórios:
 - **frontend**: interface web em React + TypeScript, consumidora do backend
 
 Para uso via API/web, veja o repositório `Autotuning-PostgreSQL-Backend`.
+
+---
+
+> Documentacao gerada com auxilio de IA.
