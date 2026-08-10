@@ -44,10 +44,10 @@ Ele foi extraído do monorepo original como parte de uma separação em três
 repositórios:
 
 - **pipeline** (este repositório) — geração de benchmarks, execução e
-  treinamento de ML
-- **api** — repositório irmão (`../Autotuning-PostgreSQL-Api`) que depende
-  deste pacote instalado e expõe a camada HTTP/serviço que orquestra o
-  pipeline
-- **frontend** — interface web estática, consumidora da api
+  treinamento de ML, em Python
+- **backend** — repositório irmão (`../Autotuning-PostgreSQL-Backend`, Java +
+  Spring Boot) que orquestra este pacote (subprocessos + Postgres) e expõe
+  a API REST/SSE
+- **frontend** — interface web em React + TypeScript, consumidora do backend
 
-Para uso via API/web, veja o repositório `Autotuning-PostgreSQL-Api`.
+Para uso via API/web, veja o repositório `Autotuning-PostgreSQL-Backend`.
