@@ -1,6 +1,6 @@
 """
 Curva de aprendizado: TabICL (foundation model, in-context) vs. XGBoost
-especialista, variando o TAMANHO do dataset de treino — testa a pergunta que
+especialista, variando o TAMANHO do dataset de treino: testa a pergunta que
 realmente importa pro TCC: um foundation model precisa de menos dados
 coletados pra chegar na mesma acurácia?
 
@@ -10,7 +10,7 @@ Metodologia:
     2. Do restante (pool de treino, ~80%), sorteia subamostras de tamanho
        crescente (15, 20, 30, 50, 75, 100, 150, 200, 300, 400, todas).
     3. Pra cada tamanho, repete N_REPEATS vezes com sorteios diferentes
-       (exceto "todas", que é determinístico) — reporta média ± desvio padrão.
+       (exceto "todas", que é determinístico): reporta média ± desvio padrão.
     4. Mesmos hiperparâmetros de produção pros dois modelos (XGB_PARAMS de
        ml/config.py; TabICL sem nenhum ajuste).
     5. Roda pros 4 alvos do TCC (não só o "manchete"), salva tudo em CSV.
@@ -62,7 +62,7 @@ def run_target(target_name: str, df: pd.DataFrame, rows: list[dict]) -> None:
     X_pool, X_test, y_pool, y_test = train_test_split(
         X_all, y_all, test_size=TEST_FRACTION, random_state=CV_SEED
     )
-    print(f"\n{'='*78}\n  {target_name} ({col})  —  pool={len(X_pool)}  teste_fixo={len(X_test)}\n{'='*78}")
+    print(f"\n{'='*78}\n  {target_name} ({col}): pool={len(X_pool)}  teste_fixo={len(X_test)}\n{'='*78}")
     print(f"{'n_treino':>10} {'modelo':<10} {'RMSE (média±dp)':>22} {'ρ (média±dp)':>18} {'tempo':>8}")
     print("─" * 78)
 

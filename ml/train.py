@@ -4,16 +4,16 @@ Treinamento dos modelos do meta-modelo de autotuning PostgreSQL.
 Treina os 4 especialistas XGBoost (nível 1) e o ranker XGBoost (nível 2),
 salva todos os modelos e as predições OOF para uso no evaluate.py.
 
-O ranker usa XGBoost rank:ndcg — não depende de libgomp1.
+O ranker usa XGBoost rank:ndcg: não depende de libgomp1.
 
 Saída em data/models/:
-    m1_geo_tpch.ubj       — XGBoost M1 (performance TPC-H)
-    m2_geo_tpcds.ubj      — XGBoost M2 (performance TPC-DS)
-    m3_cache_tpch.ubj     — XGBoost M3 (cache hit TPC-H)
-    m4_spill_tpcds.ubj    — XGBoost M4 (spill TPC-DS)
-    ranker.ubj            — XGBoost Ranker (rank:ndcg)
-    oof_predictions.csv   — predições out-of-fold de todos os especialistas
-    train_metrics.json    — RMSE e Spearman ρ de cada modelo
+    m1_geo_tpch.ubj: XGBoost M1 (performance TPC-H)
+    m2_geo_tpcds.ubj: XGBoost M2 (performance TPC-DS)
+    m3_cache_tpch.ubj: XGBoost M3 (cache hit TPC-H)
+    m4_spill_tpcds.ubj: XGBoost M4 (spill TPC-DS)
+    ranker.ubj: XGBoost Ranker (rank:ndcg)
+    oof_predictions.csv: predições out-of-fold de todos os especialistas
+    train_metrics.json: RMSE e Spearman ρ de cada modelo
 
 Uso:
     .venv/bin/python ml/train.py
@@ -72,7 +72,7 @@ def compute_score(df: pd.DataFrame, weights: dict[str, float] | None = None) -> 
     """
     Score composto por grupo (tier, combination).
 
-    weights: substitui SCORE_WEIGHTS quando fornecido — usado pela otimização
+    weights: substitui SCORE_WEIGHTS quando fornecido: usado pela otimização
              de pesos em evaluate.py. Deve somar 1.0.
     """
     w = weights if weights is not None else SCORE_WEIGHTS
@@ -162,14 +162,14 @@ def train_ranker(
 ) -> tuple[xgb.XGBRanker, dict]:
     """
     Treina XGBoost Ranker (rank:ndcg) sobre grupos (tier, combination).
-    Não depende de libgomp1 — usa XGBoost puro.
+    Não depende de libgomp1: usa XGBoost puro.
     """
     valid = score.notna()
     df_v  = df.loc[valid].copy()
     X_v   = X.loc[valid]
     s_v   = score.loc[valid]
 
-    # Ordenar por grupo (obrigatório para XGBRanker — qid deve ser não-decrescente)
+    # Ordenar por grupo (obrigatório para XGBRanker: qid deve ser não-decrescente)
     df_v["_group"] = df_v["tier"] + "/" + df_v["combination"]
     order = df_v.sort_values("_group").index
     df_s  = df_v.loc[order]
@@ -228,7 +228,7 @@ def load_ranker(name: str = "ranker") -> xgb.XGBRanker:
 
 def run(skip_ranker: bool = False) -> dict:
     print("═" * 60)
-    print("  TREINO — Meta-Modelo PostgreSQL Autotuning")
+    print("  TREINO: Meta-Modelo PostgreSQL Autotuning")
     print("═" * 60)
 
     print(f"\n[1/3] Carregando {FEATURES_CSV.name}...")

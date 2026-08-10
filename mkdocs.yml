@@ -1,7 +1,8 @@
-site_name: TCC — Auto-Tuning PostgreSQL
+site_name: Autotuning PostgreSQL
 site_description: >
-  Documentação do projeto de TCC sobre ajuste automático de configurações
-  PostgreSQL com Latin Hypercube Sampling e benchmarks TPC-H e TPC-DS.
+  Documentação do projeto de meta-modelagem para ajuste automático de
+  configurações PostgreSQL com Latin Hypercube Sampling e benchmarks TPC-H
+  e TPC-DS. Pensado para ser tema de TCC, mas não usado como tal.
 site_author: Araujo
 docs_dir: docs
 site_dir: documentacao

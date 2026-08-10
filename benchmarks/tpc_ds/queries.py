@@ -3,11 +3,11 @@ As 99 queries do benchmark TPC-DS com valores de substituição fixos
 (baseados nos parâmetros de qualificação da especificação TPC-DS v2.x).
 
 Cada entrada é um dict com:
-    id       : int  — número da query (1–99)
-    name     : str  — nome descritivo
-    sql      : str  — SQL pronto para executar
-    setup    : str  — DDL executado antes da query (opcional)
-    teardown : str  — DDL executado após a query (opcional)
+    id       : int - número da query (1–99)
+    name     : str - nome descritivo
+    sql      : str - SQL pronto para executar
+    setup    : str - DDL executado antes da query (opcional)
+    teardown : str - DDL executado após a query (opcional)
 """
 
 QUERIES: list[dict] = (

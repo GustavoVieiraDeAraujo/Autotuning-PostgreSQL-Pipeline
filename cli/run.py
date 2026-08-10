@@ -21,7 +21,7 @@ Interrupção
 Resultados
 ----------
     Fila e resultados vivem no Postgres de controle (ver db/schema.sql),
-    não mais em arquivos locais — permite múltiplos workers `cli/run.py`,
+    não mais em arquivos locais: permite múltiplos workers `cli/run.py`,
     inclusive em máquinas diferentes, disputando a mesma fila com segurança.
     Configuração via variável de ambiente ``DATABASE_URL`` (ver utils/db.py).
 """
@@ -66,7 +66,7 @@ _MAX_RETRIES = 3
 
 def _handle_sigint(signum, frame):  # noqa: ANN001
     print(
-        "\n\033[33m[runner] Interrompido — encerrando agora. "
+        "\n\033[33m[runner] Interrompido: encerrando agora. "
         "A task atual voltará para pending na próxima execução.\033[0m",
         flush=True,
     )
@@ -90,13 +90,13 @@ def _load_tier_configs() -> dict:
 # ---------------------------------------------------------------------------
 
 def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
-    banner("BENCHMARK RUNNER — TPC-H + TPC-DS PostgreSQL Autotuning")
+    banner("BENCHMARK RUNNER: TPC-H + TPC-DS PostgreSQL Autotuning")
 
     # ── Fila ──────────────────────────────────────────────────────────────
     queue = ExecutionQueue()
 
     if queue.is_empty():
-        log("Fila vazia — nenhuma tarefa foi gerada ainda.", level="ERROR")
+        log("Fila vazia: nenhuma tarefa foi gerada ainda.", level="ERROR")
         log("Gere as configurações via interface web ou 'make generate'.", level="WARN")
         sys.exit(1)
 
@@ -128,7 +128,7 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
         if not image_exists(tag)
     ]
     if missing:
-        log("Imagens ausentes — execute 'python cli/prepare.py' antes do runner:",
+        log("Imagens ausentes: execute 'python cli/prepare.py' antes do runner:",
             level="ERROR")
         for tag in missing:
             log(f"  • {tag}", level="ERROR", indent=1)
@@ -140,7 +140,7 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
 
     if dry_run:
         sep()
-        log("DRY RUN — plano de execução:", level="HEAD")
+        log("DRY RUN: plano de execução:", level="HEAD")
         for i, task in enumerate(queue.pending()[:10], 1):
             log(f"  {i:3d}. tier={task['tier']:<7} combo={task['combination']:<12} "
                 f"id={task['id']}", level="DIM")
@@ -259,11 +259,11 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
 
         except InvalidConfigError as exc:
             # Falha determinística: PostgreSQL rejeitou o parâmetro.
-            # Repetir não vai ajudar — abandona imediatamente.
+            # Repetir não vai ajudar: abandona imediatamente.
             duration_s  = time.perf_counter() - t_task
             finished_at = datetime.now(timezone.utc).isoformat()
             err_msg     = str(exc)
-            log(f"CONFIG INVÁLIDA após {fmt_duration(duration_s)} — sem retry:",
+            log(f"CONFIG INVÁLIDA após {fmt_duration(duration_s)}: sem retry:",
                 level="ERROR", indent=1)
             for line in err_msg.strip().splitlines():
                 log(line, level="ERROR", indent=2)
@@ -272,11 +272,11 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
             tasks_abandoned += 1
 
         except TaskTimeoutError as exc:
-            # Limite de tempo da tarefa excedido — abandona sem retry.
+            # Limite de tempo da tarefa excedido: abandona sem retry.
             duration_s  = time.perf_counter() - t_task
             finished_at = datetime.now(timezone.utc).isoformat()
             err_msg     = str(exc)
-            log(f"TIMEOUT DE TAREFA após {fmt_duration(duration_s)} — sem retry:",
+            log(f"TIMEOUT DE TAREFA após {fmt_duration(duration_s)}: sem retry:",
                 level="ERROR", indent=1)
             log(err_msg, level="ERROR", indent=2)
             # Se o timeout ocorreu durante TPC-DS, TPC-H já concluiu.
@@ -302,14 +302,14 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
 
             if attempt < _MAX_RETRIES:
                 log(
-                    f"Tentativa {attempt}/{_MAX_RETRIES} falhou — reenfileirando...",
+                    f"Tentativa {attempt}/{_MAX_RETRIES} falhou: reenfileirando...",
                     level="WARN", indent=1,
                 )
                 queue.requeue_with_retry(tid, err_msg)
             else:
                 finished_at = datetime.now(timezone.utc).isoformat()
                 log(
-                    f"Tentativa {attempt}/{_MAX_RETRIES} falhou — abandonando tarefa.",
+                    f"Tentativa {attempt}/{_MAX_RETRIES} falhou: abandonando tarefa.",
                     level="ERROR", indent=1,
                 )
                 finalize_task_result(result_id, finished_at, duration_s)
@@ -352,12 +352,12 @@ def _run(retry_failed: bool = False, dry_run: bool = False) -> None:
 # ---------------------------------------------------------------------------
 
 def _status() -> None:
-    banner("STATUS — Benchmark Runner (TPC-H + TPC-DS)")
+    banner("STATUS: Benchmark Runner (TPC-H + TPC-DS)")
 
     queue = ExecutionQueue()
 
     if queue.is_empty():
-        log("Fila vazia — nenhuma tarefa foi gerada ainda.", level="WARN")
+        log("Fila vazia: nenhuma tarefa foi gerada ainda.", level="WARN")
         log("Gere as configurações via interface web ou 'make generate'.", level="DIM")
         return
 

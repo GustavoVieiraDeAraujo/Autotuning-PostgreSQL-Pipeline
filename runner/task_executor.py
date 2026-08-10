@@ -2,7 +2,7 @@
 Execução sequencial de uma tarefa (TPC-H seguido de TPC-DS).
 
 Sobe um container por benchmark, executa o benchmark completo e
-remove o container ao final — independentemente de sucesso ou falha.
+remove o container ao final: independentemente de sucesso ou falha.
 
 Funções
 -------
@@ -31,9 +31,9 @@ from utils.logging import CYAN, RESET, VIOLET, log
 # Limite total de tempo por tarefa (TPC-H + TPC-DS combinados).
 # Evita que configurações patológicas bloqueiem o runner por horas.
 _TASK_TIMEOUT_S: dict[str, int] = {
-    "low":    3 * 3600,   # 3h — SF=1, 2 vCPU, 2 GB RAM (configs com planners desligados podem ser lentas)
-    "medium": 4 * 3600,   # 4h — SF=2, 4 vCPU, 4 GB RAM
-    "high":   8 * 3600,   # 8h — SF=4, 6 vCPU, 5 GB RAM
+    "low":    3 * 3600,   # 3h: SF=1, 2 vCPU, 2 GB RAM (configs com planners desligados podem ser lentas)
+    "medium": 4 * 3600,   # 4h: SF=2, 4 vCPU, 4 GB RAM
+    "high":   8 * 3600,   # 8h: SF=4, 6 vCPU, 5 GB RAM
 }
 
 # Re-exporta para uso em cli/run.py sem importar os módulos internos
@@ -45,7 +45,7 @@ def _force_remove_container(name: str) -> None:
 
     Chamado antes de criar um container para limpar resíduos de tentativas
     anteriores interrompidas (SIGKILL, crash do processo, etc.).
-    Silencioso — ignora erros e containers inexistentes.
+    Silencioso: ignora erros e containers inexistentes.
     """
     try:
         client = docker.from_env()
@@ -177,7 +177,7 @@ def run_task(
                 task_deadline=task_deadline,
             )
         except TaskTimeoutError as exc:
-            # TPC-H já completou — re-levanta com resultado parcial para que
+            # TPC-H já completou: re-levanta com resultado parcial para que
             # cli/run.py possa salvar o summary do TPC-H antes de abandonar.
             raise TaskTimeoutError(str(exc), partial_tpch_result=tpch_result) from exc
         finally:

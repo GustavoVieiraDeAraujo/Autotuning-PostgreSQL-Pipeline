@@ -1,4 +1,4 @@
-# Decisões de Engenharia — Registro Formal
+# Decisões de Engenharia: Registro Formal
 
 > **Finalidade:** Este documento registra as decisões técnicas tomadas ao longo do
 > projeto, com justificativa detalhada de cada uma e o impacto esperado na qualidade
@@ -12,13 +12,13 @@
 ## Índice
 
 1. [Queries permanentemente puladas (TPC-H Q17, Q20 / TPC-DS Q95)](#1-queries-permanentemente-puladas)
-2. [Estratégia de timeout — por query e por tarefa](#2-estratégia-de-timeout)
+2. [Estratégia de timeout: por query e por tarefa](#2-estratégia-de-timeout)
 3. [Imputação de dados de tarefas abandonadas](#3-imputação-de-dados-de-tarefas-abandonadas)
 4. [Remoção de parâmetros de I/O do Stage 3](#4-remoção-de-parâmetros-de-io-do-stage-3)
 5. [Remoção de `enable_windowagg` do Stage 3](#5-remoção-de-enable_windowagg-do-stage-3)
 6. [Upgrade PostgreSQL 16 → 17](#6-upgrade-postgresql-16--17)
 7. [Validação de parâmetros contra PostgreSQL real no prepare](#7-validação-de-parâmetros-contra-postgresql-real-no-prepare)
-18. [Pipeline de ML — arquitetura final (pós-Rodada 1)](#18-pipeline-de-ml--arquitetura-final-pós-rodada-1)
+18. [Pipeline de ML: arquitetura final (pós-Rodada 1)](#18-pipeline-de-ml--arquitetura-final-pós-rodada-1)
 19. [Não alterar espaço de parâmetros entre rodadas](#19-não-alterar-espaço-de-parâmetros-entre-rodadas)
 20. [Por que uma segunda rodada foi necessária](#20-por-que-uma-segunda-rodada-foi-necessária)
 21. [Mecanismo de start_id para rodadas múltiplas](#21-mecanismo-de-start_id-para-rodadas-múltiplas)
@@ -26,9 +26,9 @@
 23. [Nova Rodada via interface web](#23-nova-rodada-via-interface-web)
 24. [Manter outliers no dataset de treino](#24-manter-outliers-no-dataset-de-treino)
 25. [Resultados combinados Rodadas 1+2 e decisão sobre terceira rodada](#25-resultados-combinados-rodadas-12-e-decisão-sobre-terceira-rodada)
-26. [Top-K accuracy — problema de escala e como reportar no TCC](#26-top-k-accuracy--problema-de-escala-e-como-reportar-no-tcc)
+26. [Top-K accuracy: problema de escala e como reportar no TCC](#26-top-k-accuracy--problema-de-escala-e-como-reportar-no-tcc)
 27. [Análise de custo-efetividade em nuvem](#27-análise-de-custo-efetividade-em-nuvem)
-28. [Arquitetura do projeto — Cookiecutter Data Science adaptado](#28-arquitetura-do-projeto--cookiecutter-data-science-adaptado)
+28. [Arquitetura do projeto: Cookiecutter Data Science adaptado](#28-arquitetura-do-projeto--cookiecutter-data-science-adaptado)
 8. [Adição de `enable_sort` ao Stage 1](#8-adição-de-enable_sort-ao-stage-1)
 9. [Restrição `enable_hashjoin=off + enable_mergejoin=off`](#9-restrição-enable_hashjoin--enable_mergejoin)
 10. [JIT desabilitado no tier LOW (2 vCPU)](#10-jit-desabilitado-no-tier-low)
@@ -44,7 +44,7 @@
 
 ## 1. Queries permanentemente puladas
 
-**Queries afetadas:** TPC-H Q17, Q20 — TPC-DS Q95
+**Queries afetadas:** TPC-H Q17, Q20: TPC-DS Q95
 
 **Implementação:** `benchmarks/tpc_h/benchmark.py` e `benchmarks/tpc_ds/benchmark.py`
 
@@ -83,14 +83,14 @@ diferença. O total de queries ativas (`_TPCH_TOTAL_QUERIES = 20`,
 
 ### No CSV de features
 
-Colunas `tpch_q17_ms`, `tpch_q20_ms` e `tpcds_q95_ms` são sempre `None` — o
+Colunas `tpch_q17_ms`, `tpch_q20_ms` e `tpcds_q95_ms` são sempre `None`: o
 modelo não vê sinal nessas posições e pode aplicar máscara durante treinamento.
 
 ---
 
 ## 2. Estratégia de timeout
 
-### Por query — `statement_timeout`
+### Por query: `statement_timeout`
 
 Cada query recebe `SET statement_timeout = '15min'` antes da execução
 (`benchmarks/query_executor.py`). Quando excedido, o PostgreSQL levanta
@@ -105,11 +105,11 @@ Cada query recebe `SET statement_timeout = '15min'` antes da execução
 - Queries que excedem 15min sob *qualquer* configuração são estruturalmente
   impossíveis de otimizar via parâmetros do planner (são as Q17, Q20, Q95).
 - Timeout menor (ex: 5min) arriscaria matar queries que apenas ficaram lentas
-  por uma configuração ruim de `nestloop` — perdendo sinal legítimo de "config
+  por uma configuração ruim de `nestloop`: perdendo sinal legítimo de "config
   muito ruim".
 - Timeout maior aumentaria o custo de cada tarefa sem retorno em sinal útil.
 
-### Por tarefa — tier timeout
+### Por tarefa: tier timeout
 
 Além do timeout por query, cada tarefa tem um timeout de tier (definido em
 `specs/docker.json`) para o tempo total da tarefa. Tarefas que excedem esse
@@ -127,7 +127,7 @@ limite são abandonadas com `abandoned_reason = "timeout"`.
 introduziria viés: configurações genuinamente ruins seriam cortadas antes de
 terminar, enquanto configurações boas completariam. O resultado seria um dataset
 distorcido onde nunca veríamos o comportamento real das piores configs. Um timeout
-fixo e generoso preserva o sinal de "config ruim" — a query simplesmente recebe
+fixo e generoso preserva o sinal de "config ruim": a query simplesmente recebe
 `exec_ms = 900_000` como imputação.
 
 ---
@@ -145,10 +145,10 @@ _IMPUTE_OOM_MS     = 900_000.0 * 1.5  # 22.5 min
 
 | Situação | Valor imputado | Raciocínio |
 |---|---|---|
-| Query com `failure_reason="timeout"` | `900_000 ms` | Valor exato do limite — a query demorou pelo menos isso |
+| Query com `failure_reason="timeout"` | `900_000 ms` | Valor exato do limite: a query demorou pelo menos isso |
 | Query com `failure_reason="oom"` | `1_350_000 ms` | 1.5× o timeout: OOM é pior que timeout (kernel matou o processo, consumiu mais recursos) |
-| Query com `failure_reason="technical"` | `900_000 ms` | Conservador — falha de infra, mas não queremos ignorar a query no somatório |
-| Tarefa abandonada, query não chegou a iniciar | `900_000 ms` | A tarefa foi cortada pelo timeout do tier — as queries restantes teriam sido igualmente lentas |
+| Query com `failure_reason="technical"` | `900_000 ms` | Conservador: falha de infra, mas não queremos ignorar a query no somatório |
+| Tarefa abandonada, query não chegou a iniciar | `900_000 ms` | A tarefa foi cortada pelo timeout do tier: as queries restantes teriam sido igualmente lentas |
 
 ### Por que não descartar tarefas abandonadas?
 
@@ -160,7 +160,7 @@ informação valiosa:
    Descartar seria jogar fora dados custosos.
 
 2. **Tarefas `timeout`:** o fato de uma tarefa ter excedido o timeout total é
-   *sinal* — indica que a combinação de configuração + tier foi ruim o suficiente
+   *sinal*: indica que a combinação de configuração + tier foi ruim o suficiente
    para não terminar em tempo hábil. Para o meta-modelo, isso é informação: aquela
    config é "pior que o threshold".
 
@@ -173,7 +173,7 @@ informação valiosa:
 O meta-modelo deve ser treinado com **imputação explícita**, não com exclusão de
 linhas. Usar `900_000 ms` para queries não executadas cria um limite superior
 conservador que informa o modelo de que "aquela região do espaço de parâmetros
-é perigosa". Modelos como XGBoost tratam isso naturalmente — não há problema com
+é perigosa". Modelos como XGBoost tratam isso naturalmente: não há problema com
 o valor ser uma estimativa desde que seja sistematicamente aplicado.
 
 ---
@@ -243,7 +243,7 @@ O parâmetro foi incluído originalmente no Stage 3 com base na documentação d
 PostgreSQL em desenvolvimento. Após upgrade para PostgreSQL 17 e adição do passo
 de validação em `cli/prepare.py`, a função `_run_param_validation()` executou
 `SELECT name FROM pg_settings WHERE name = 'enable_windowagg'` contra um container
-`postgres:17` e retornou zero linhas — confirmando que o parâmetro não existe.
+`postgres:17` e retornou zero linhas: confirmando que o parâmetro não existe.
 
 ### Consequência antes da correção
 
@@ -314,13 +314,13 @@ SELECT name FROM pg_settings WHERE name = ANY(%(params)s)
 ### Por que é crucial
 
 Sem essa validação, configurações com parâmetros inválidos só seriam descobertas
-durante a execução da fila — potencialmente após horas de espera. O `runner`
+durante a execução da fila: potencialmente após horas de espera. O `runner`
 tentaria aplicar a config, receberia `ERROR: unrecognized configuration parameter`
 do PostgreSQL, e marcaria a tarefa como `invalid_config`.
 
 **O custo de uma rodada com parâmetros inválidos:**
 
-- `enable_windowagg` afetou 80 tarefas de 210 (38%) — todas `invalid_config`.
+- `enable_windowagg` afetou 80 tarefas de 210 (38%): todas `invalid_config`.
 - Cada tarefa consome um slot na fila e não produz dado utilizável.
 - Com 50 configs × 7 combinações × 3 tiers = 1050 tarefas por rodada, 38% de
   desperdício = **399 tarefas perdidas** e potencialmente dias de execução em vão.
@@ -362,7 +362,7 @@ execução. Desabilitar força o planner a escolher estratégias alternativas:
   sem sort, forçando hash join para todos os joins.
 
 Essas interações cruzadas são exatamente o tipo de sinal que o meta-modelo precisa
-capturar — razão pela qual `enable_sort` é Stage 1 (interage com parâmetros do
+capturar: razão pela qual `enable_sort` é Stage 1 (interage com parâmetros do
 Stage 1 e Stage 2) e não Stage 3.
 
 ### Por que não estava incluído antes
@@ -382,7 +382,7 @@ no_hj = config.get("enable_hashjoin")  == "off"
 no_mj = config.get("enable_mergejoin") == "off"
 if no_hj and no_mj:
     errors.append(
-        "E2: enable_hashjoin=off + enable_mergejoin=off — apenas nested loop "
+        "E2: enable_hashjoin=off + enable_mergejoin=off: apenas nested loop "
         "disponível; catastrófico para OLAP (timeout garantido)"
     )
 ```
@@ -404,7 +404,7 @@ com tabelas de múltiplos gigabytes (SF=2, SF=4):
 Nas coletas iniciais (antes da restrição), tarefas com essa combinação foram
 abandonadas por timeout em < 10 queries. O custo para o dataset:
 - Cada tarefa consome ~15min no tier LOW (timeout da primeira query de join).
-- Produz zero sinal útil para o modelo — toda a configuração é inválida.
+- Produz zero sinal útil para o modelo: toda a configuração é inválida.
 - O espaço LHS desperdiça um ponto que poderia ter explorado uma região válida.
 
 ### Impacto no meta-modelo
@@ -441,7 +441,7 @@ nativo, o que pode acelerar queries com funções complexas. No entanto, tem ove
    aumentando latência geral.
 3. **Incompatibilidade com SF=1:** o benefício do JIT aparece em queries que
    processam dezenas de milhões de linhas repetidamente. Com SF=1, a maioria das
-   queries TPC-H dura entre 200ms e 5s — muito curto para JIT ajudar.
+   queries TPC-H dura entre 200ms e 5s: muito curto para JIT ajudar.
 
 ### Evidência empírica
 
@@ -453,7 +453,7 @@ Comparando tarefas `done` em `low/s1` com `jit=0` vs tentativas com `jit=1`:
 ### Impacto no meta-modelo
 
 Manter `jit=1` no tier LOW adicionaria ruído: o modelo veria a feature `jit=1`
-associada a resultados **piores** no LOW, mas **melhores** no HIGH — criando
+associada a resultados **piores** no LOW, mas **melhores** no HIGH: criando
 uma interação hardware×config que exigiria mais dados para ser aprendida
 corretamente. Fixar `jit=0` no LOW simplifica o espaço de aprendizado sem perda
 de sinal relevante.
@@ -485,7 +485,7 @@ por query. Em workloads analíticos:
 
 Incluir `per_gather=0` no espaço amostral adicionaria pontos onde o sinal de
 paralelismo é artificialmente suprimido. O meta-modelo aprenderia que "qualquer
-config com `per_gather=0` é ruim" — verdade, mas trivial e sem utilidade prática
+config com `per_gather=0` é ruim": verdade, mas trivial e sem utilidade prática
 (nenhum DBA usaria `per_gather=0` em workload analítico).
 
 O objetivo é explorar **o espaço de configurações razoáveis**, não mapear
@@ -550,7 +550,7 @@ a mesma config PostgreSQL podem diferir em 5-15% do tempo de execução devido a
 
 **Para o meta-modelo:** se o modelo treina com uma única medição por config, parte
 da variância que ele aprende é ruído experimental, não sinal de configuração.
-Com 3 repetições, podemos usar a **mediana** como target — eliminando outliers
+Com 3 repetições, podemos usar a **mediana** como target: eliminando outliers
 causados por picos de I/O ou CPU.
 
 ### Quando usar
@@ -647,7 +647,7 @@ O Scale Factor determina o volume de dados dos benchmarks TPC (SF=1 = ~1GB de
 tabelas). A escolha de SF por tier serve a dois propósitos:
 
 1. **Adequação ao hardware:** SF=4 em 2 GB de RAM (tier LOW) causaria I/O
-   excessivo — o banco não cabe em memória, e cada query se tornaria I/O-bound
+   excessivo: o banco não cabe em memória, e cada query se tornaria I/O-bound
    independente da configuração PostgreSQL. O sinal de configuração seria enterrado
    sob ruído de I/O.
 
@@ -659,7 +659,7 @@ tabelas). A escolha de SF por tier serve a dois propósitos:
 ### Por que não usar SF igual para todos os tiers
 
 SF igual para todos (ex: SF=1 em todos) tornaria os tiers redundantes do ponto
-de vista do dataset — a única variação seria hardware, não dados. O meta-modelo
+de vista do dataset: a única variação seria hardware, não dados. O meta-modelo
 precisaria de muito mais exemplos para aprender a interação hardware×SF×config
 que é o coração do problema de auto-tuning.
 
@@ -673,7 +673,7 @@ que é o coração do problema de auto-tuning.
 if psc > 1200 and per_g > 1:
     errors.append(
         f"Cross E1+E2: parallel_setup_cost ({psc}) > 1200 com "
-        f"per_gather={per_g} — planner evitará planos paralelos"
+        f"per_gather={per_g}: planner evitará planos paralelos"
     )
 ```
 
@@ -684,7 +684,7 @@ O planner compara esse custo com o benefício estimado de paralelismo. Quando
 `parallel_setup_cost` é muito alto:
 
 - O planner escolhe planos seriais mesmo com `max_parallel_workers_per_gather > 1`.
-- O parâmetro `per_gather` torna-se efetivamente inativo — o modelo vê
+- O parâmetro `per_gather` torna-se efetivamente inativo: o modelo vê
   `per_gather=3` mas o planner se comporta como se fosse `per_gather=0`.
 
 **Implicação para o dataset:** se o modelo aprende que `per_gather=3` é bom
@@ -719,7 +719,7 @@ consistentemente evita paralelismo nos tiers testados (confirmado via
 
 ---
 
-## 18. Pipeline de ML — arquitetura final (pós-Rodada 1)
+## 18. Pipeline de ML: arquitetura final (pós-Rodada 1)
 
 **Data:** 2026-05-10
 
@@ -732,15 +732,15 @@ consistentemente evita paralelismo nos tiers testados (confirmado via
 - **4 especialistas XGBRegressor**, um por target: `geo_mean_tpch` (ms), `geo_mean_tpcds` (ms), `cache_hit_tpch` (%), `spill_tpcds` (queries com spill)
 - **Score composto** calculado diretamente via rank normalizado dentro do grupo (tier × combination): `0.65 × rank_norm(1/geo_tpch) + 0.35 × rank_norm(cache_tpch)`
 - **XGBRanker** (objective=`rank:ndcg`) como alternativa ao score para ranking direto
-- **Sem Ridge de stacking** — testado e descartado: ρ=0.383, versus ρ=0.653 do score direto. O problema é que o score é relativo ao grupo, então predições absolutas dos especialistas não correlacionam com o rank global sem normalização
+- **Sem Ridge de stacking**: testado e descartado: ρ=0.383, versus ρ=0.653 do score direto. O problema é que o score é relativo ao grupo, então predições absolutas dos especialistas não correlacionam com o rank global sem normalização
 
 **Alternativas descartadas:**
 
 | Alternativa | Motivo do descarte |
 |---|---|
 | LightGBM LambdaRank | Dependência `libgomp.so.1` não disponível no ambiente; substituído por XGBRanker |
-| Ridge stacking | ρ=0.383 — predições absolutas não correlacionam com rank relativo |
-| Workers como target | Campo `plan` sempre null nos 335 dados — informação nunca capturada |
+| Ridge stacking | ρ=0.383: predições absolutas não correlacionam com rank relativo |
+| Workers como target | Campo `plan` sempre null nos 335 dados: informação nunca capturada |
 
 **Resultados obtidos com Rodada 1:**
 
@@ -750,9 +750,9 @@ consistentemente evita paralelismo nos tiers testados (confirmado via
 | M2 geo_mean_tpcds | 0.966 | 899ms |
 | M3 cache_hit_tpch | 0.930 | 8.5% |
 | M4 spill_tpcds | 0.949 | 7.3q |
-| Ranker XGBoost | 0.761 | — |
-| Top-1 accuracy | 38% | — |
-| Top-3 accuracy | 62% | — |
+| Ranker XGBoost | 0.761 |: |
+| Top-1 accuracy | 38% |: |
+| Top-3 accuracy | 62% |: |
 
 ---
 
@@ -776,13 +776,13 @@ A análise SHAP sobre os dados da Rodada 1 revelou a seguinte hierarquia de impa
 | ... | ... |
 | enable_material | 0.1% |
 
-Parâmetros como `enable_material` (0.1%), `enable_parallel_append` (0.2%) e `join_collapse_limit` (0.3%) têm impacto baixo — mas **não foram removidos do espaço de amostragem** pelos seguintes motivos:
+Parâmetros como `enable_material` (0.1%), `enable_parallel_append` (0.2%) e `join_collapse_limit` (0.3%) têm impacto baixo, mas **não foram removidos do espaço de amostragem** pelos seguintes motivos:
 
 1. **Incompatibilidade entre rodadas:** se um parâmetro é removido, os dados novos terão aquele parâmetro sempre no valor default, enquanto os dados antigos têm variação real. Isso cria distribuição inconsistente que confunde o modelo durante o treino conjunto.
 
 2. **Impacto baixo ≠ impacto nulo:** 0.1% de impacto em 335 configs ainda é sinal real. Com mais dados e combinações diferentes, a importância pode crescer.
 
-3. **O modelo XGBoost lida bem com features de baixo impacto:** diferentemente de modelos lineares, o XGBoost atribui splits pouco frequentes às features fracas — elas não adicionam ruído significativo.
+3. **O modelo XGBoost lida bem com features de baixo impacto:** diferentemente de modelos lineares, o XGBoost atribui splits pouco frequentes às features fracas: elas não adicionam ruído significativo.
 
 4. **Custo de uma decisão errada é alto:** mudar o espaço de parâmetros invalida a possibilidade de combinar rodadas antigas e novas num único treino, desperdiçando semanas de coleta.
 
@@ -798,13 +798,13 @@ Parâmetros como `enable_material` (0.1%), `enable_parallel_append` (0.2%) e `jo
 
 **O problema:**
 
-O modelo consegue explicar 96.2% da variância global (ρ=0.962), mas o **top-1 accuracy é 38%** — o modelo acerta a melhor config em apenas 38% dos grupos.
+O modelo consegue explicar 96.2% da variância global (ρ=0.962), mas o **top-1 accuracy é 38%**: o modelo acerta a melhor config em apenas 38% dos grupos.
 
 A causa raiz não é o modelo em si, mas a relação entre RMSE e granularidade do espaço:
 
 - **RMSE do modelo:** ~733ms
 - **Diferença média entre configs adjacentes dentro de um grupo:** ~200ms
-- **Conclusão:** o erro de predição é maior que a diferença entre configs próximas — o modelo não consegue separar configs que são "quase iguais" em performance
+- **Conclusão:** o erro de predição é maior que a diferença entre configs próximas: o modelo não consegue separar configs que são "quase iguais" em performance
 
 **Por que mais dados ajudam:**
 
@@ -816,9 +816,9 @@ Com 16 configs por grupo (tier × combination), o modelo tem poucos exemplos de 
 
 **O que foi descartado antes de decidir pela segunda rodada:**
 
-- **Optuna (80 trials):** executado em 2026-05-10. Resultado: melhora marginal (+4.3% em geo_tpcds, -0.4% em geo_tpch). O modelo já estava próximo do ótimo para os dados disponíveis — o gargalo é quantidade de dados, não hiperparâmetros.
+- **Optuna (80 trials):** executado em 2026-05-10. Resultado: melhora marginal (+4.3% em geo_tpcds, -0.4% em geo_tpch). O modelo já estava próximo do ótimo para os dados disponíveis: o gargalo é quantidade de dados, não hiperparâmetros.
 
-**Rodada 2 — configuração:**
+**Rodada 2: configuração:**
 
 | Item | Valor |
 |---|---|
@@ -839,14 +839,14 @@ Com 16 configs por grupo (tier × combination), o modelo tem poucos exemplos de 
 
 **Solução:** parâmetro `--start-id N` adicionado em três pontos:
 
-1. `cli/generate.py` — argumento de linha de comando `--start-id`
-2. `task_queue/execution_queue.py` — parâmetro `start_id` no método `from_dict()`
-3. `web/app.py` — parâmetro `start_id` no endpoint `POST /api/generator/start`
-4. `web/static/js/api.js` — lê o campo `gen-start-id` da interface e passa na URL
+1. `cli/generate.py`: argumento de linha de comando `--start-id`
+2. `task_queue/execution_queue.py`: parâmetro `start_id` no método `from_dict()`
+3. `web/app.py`: parâmetro `start_id` no endpoint `POST /api/generator/start`
+4. `web/static/js/api.js`: lê o campo `gen-start-id` da interface e passa na URL
 
 **Uso correto:** `start_id = max_id_da_rodada_anterior + 1`. Para a Rodada 2: `start_id=336` (IDs da Rodada 1: 0–335).
 
-**Impacto:** os arquivos de resultado ficam em `output/benchmark_results/{tier}/{combination}/task_336.json` em diante, sem conflito com os da Rodada 1. Na hora de treinar, o extrator de features lê todos os arquivos do diretório — Rodada 1 e Rodada 2 juntos automaticamente.
+**Impacto:** os arquivos de resultado ficam em `output/benchmark_results/{tier}/{combination}/task_336.json` em diante, sem conflito com os da Rodada 1. Na hora de treinar, o extrator de features lê todos os arquivos do diretório: Rodada 1 e Rodada 2 juntos automaticamente.
 
 ---
 
@@ -873,7 +873,7 @@ Com 16 configs por grupo (tier × combination), o modelo tem poucos exemplos de 
 
 **Data:** 2026-05-10
 
-**Contexto:** ao final da Rodada 1, a interface web exibia apenas dois botões na tela "Benchmarks concluídos": "Ver Resultados" e "Reiniciar". O botão "Reiniciar" apaga todos os resultados — inadequado para iniciar uma segunda rodada que deve preservar os dados existentes.
+**Contexto:** ao final da Rodada 1, a interface web exibia apenas dois botões na tela "Benchmarks concluídos": "Ver Resultados" e "Reiniciar". O botão "Reiniciar" apaga todos os resultados: inadequado para iniciar uma segunda rodada que deve preservar os dados existentes.
 
 **Decisão:** adicionar seção "Nova Rodada" na tela de conclusão da interface web.
 
@@ -905,9 +905,9 @@ Com 16 configs por grupo (tier × combination), o modelo tem poucos exemplos de 
 |---|---|---|---|
 | task_221 | s1_s2_s3 | medium | 261.873ms (~4 min) |
 | task_330 | s1_s2_s3 | high | 248.039ms (~4 min) |
-| + 5 outras | — | — | > 11.552ms (p99) |
+| + 5 outras | N/A | N/A | > 11.552ms (p99) |
 
-Essas configs receberam do LHS uma combinação de parâmetros catastroficamente ruim — provavelmente `enable_hashjoin=off + enable_mergejoin=off` simultaneamente com configurações de memória inadequadas, fazendo quase todas as 20 queries TPC-H atingirem o timeout de 15 minutos.
+Essas configs receberam do LHS uma combinação de parâmetros catastroficamente ruim: provavelmente `enable_hashjoin=off + enable_mergejoin=off` simultaneamente com configurações de memória inadequadas, fazendo quase todas as 20 queries TPC-H atingirem o timeout de 15 minutos.
 
 **Teste realizado:** retreino sem os 7 outliers (filtro percentil 99):
 
@@ -922,9 +922,9 @@ Essas configs receberam do LHS uma combinação de parâmetros catastroficamente
 
 1. **Honestidade científica:** são medições reais e válidas. Filtrar dados para melhorar métricas sem justificativa técnica comprometeria a integridade do TCC.
 
-2. **Impacto prático nulo:** ρ passou de 0.966 para 0.969 — diferença irrelevante. As recomendações do modelo não mudam, pois ele já classifica corretamente essas configs como ruins.
+2. **Impacto prático nulo:** ρ passou de 0.966 para 0.969: diferença irrelevante. As recomendações do modelo não mudam, pois ele já classifica corretamente essas configs como ruins.
 
-3. **Métrica correta é ρ, não RMSE:** RMSE é sensível a outliers e é uma métrica inadequada para avaliar modelos de ranking. O Spearman ρ mede o que importa — a capacidade do modelo de ordenar configurações corretamente — e permanece em 0.966.
+3. **Métrica correta é ρ, não RMSE:** RMSE é sensível a outliers e é uma métrica inadequada para avaliar modelos de ranking. O Spearman ρ mede o que importa (a capacidade do modelo de ordenar configurações corretamente) e permanece em 0.966.
 
 4. **Argumento defensável na banca:** "o RMSE é inflado por 7 configs catastroficamente ruins que o LHS amostrou; o ρ=0.966 mostra que o modelo ordena corretamente as configurações" é uma resposta técnica sólida.
 
@@ -946,32 +946,32 @@ Essas configs receberam do LHS uma combinação de parâmetros catastroficamente
 | Score global ρ | 0.653 | **0.743** | **+9.0%** |
 | Top-3 accuracy | 62% | **52%** | -10% |
 
-**Observação sobre top-3:** a queda de 62% para 52% não indica piora do modelo — é consequência direta de grupos maiores (16 → 32 configs por grupo). Com mais configs por grupo, o "top-3" representa uma fração menor do espaço, tornando o critério mais exigente. O score global ρ (+9%) e os especialistas mostram melhora real.
+**Observação sobre top-3:** a queda de 62% para 52% não indica piora do modelo: é consequência direta de grupos maiores (16 → 32 configs por grupo). Com mais configs por grupo, o "top-3" representa uma fração menor do espaço, tornando o critério mais exigente. O score global ρ (+9%) e os especialistas mostram melhora real.
 
 ### Decisão: não realizar terceira rodada
 
 **Motivos:**
 
-1. **ρ próximo do teto:** 0.966 já é excelente. Mais dados trariam ρ → 0.970 no máximo — ganho marginal indefensável dado o custo de ~17 dias de coleta.
+1. **ρ próximo do teto:** 0.966 já é excelente. Mais dados trariam ρ → 0.970 no máximo: ganho marginal indefensável dado o custo de ~17 dias de coleta.
 
 2. **Top-3 piora com mais dados:** grupos maiores = critério mais exigente. Uma terceira rodada geraria 48 configs por grupo, provavelmente reduzindo top-3 para ~45%. Mais dados não resolvem essa limitação estrutural.
 
 3. **Suficiente para o TCC:** ρ=0.966 e top-3=52% são resultados academicamente sólidos e defensáveis. A diferença de 2.6× entre melhor e pior config por tier valida o impacto real do autotuning.
 
-4. **Custo de oportunidade:** 17 dias adicionais de coleta vs tempo de escrita do TCC — a escrita agrega mais valor ao trabalho neste momento.
+4. **Custo de oportunidade:** 17 dias adicionais de coleta vs tempo de escrita do TCC: a escrita agrega mais valor ao trabalho neste momento.
 
 **Conclusão:** o dataset de 672 tasks (335 + 337) representa o conjunto de treinamento final do meta-modelo. O foco agora é a escrita do TCC com os resultados obtidos.
 
 
 ---
 
-## 26. Top-K accuracy — problema de escala e como reportar no TCC
+## 26. Top-K accuracy: problema de escala e como reportar no TCC
 
 **Data:** 2026-05-30
 
 ### O problema
 
-A métrica top-K accuracy **não é invariante ao tamanho do grupo**. Conforme mais dados são coletados, os grupos (tier × combination) ficam maiores, e o critério de "acertar o top-3" fica automaticamente mais exigente — mesmo que o modelo esteja melhorando.
+A métrica top-K accuracy **não é invariante ao tamanho do grupo**. Conforme mais dados são coletados, os grupos (tier × combination) ficam maiores, e o critério de "acertar o top-3" fica automaticamente mais exigente: mesmo que o modelo esteja melhorando.
 
 **Evidência observada:**
 
@@ -981,15 +981,15 @@ A métrica top-K accuracy **não é invariante ao tamanho do grupo**. Conforme m
 | Rodadas 1+2 (672 tasks) | ~32 | 9% do grupo | **52%** |
 | Hipotético 3ª rodada (1008 tasks) | ~48 | 6% do grupo | ~45% (estimado) |
 
-O modelo **melhorou** (ρ: 0.653 → 0.743), mas o top-3 caiu porque há mais configs competindo pelo pódio. É como comparar "acerte o top-3 de uma turma de 16 alunos" com "acerte o top-3 de uma turma de 32 alunos" — a prova não ficou mais fácil, o critério ficou mais exigente.
+O modelo **melhorou** (ρ: 0.653 → 0.743), mas o top-3 caiu porque há mais configs competindo pelo pódio. É como comparar "acerte o top-3 de uma turma de 16 alunos" com "acerte o top-3 de uma turma de 32 alunos": a prova não ficou mais fácil, o critério ficou mais exigente.
 
 ### Por que é estrutural
 
 Não existe solução em código ou dados para este problema. As únicas alternativas seriam:
 
-1. **Manter o número de configs por grupo fixo** — significa parar de coletar dados, o que contradiz o objetivo de melhorar o modelo
-2. **Usar top-K% em vez de top-K fixo** — reportar "top-18% accuracy" em vez de "top-3 accuracy", tornando a métrica invariante ao tamanho do grupo
-3. **Usar ρ Spearman como métrica principal** — que mede qualidade de ranking de forma scale-invariante
+1. **Manter o número de configs por grupo fixo**: significa parar de coletar dados, o que contradiz o objetivo de melhorar o modelo
+2. **Usar top-K% em vez de top-K fixo**: reportar "top-18% accuracy" em vez de "top-3 accuracy", tornando a métrica invariante ao tamanho do grupo
+3. **Usar ρ Spearman como métrica principal**: que mede qualidade de ranking de forma scale-invariante
 
 ### Como reportar no TCC
 
@@ -1004,7 +1004,7 @@ Comparação correta entre rodadas:
 | Rodada 1 (335) | 62% | 16 configs | 18% | 0.653 |
 | Rodadas 1+2 (672) | 52% | 32 configs | 9% | 0.743 |
 
-A segunda linha mostra resultado **melhor** — mesmo com top-3 menor, o ρ subiu +9% e o critério ficou duas vezes mais exigente. O examinador precisa de ambas as colunas para avaliar corretamente.
+A segunda linha mostra resultado **melhor**: mesmo com top-3 menor, o ρ subiu +9% e o critério ficou duas vezes mais exigente. O examinador precisa de ambas as colunas para avaliar corretamente.
 
 ### Métrica recomendada para defesa
 
@@ -1051,7 +1051,7 @@ Cada tier usa um scale factor (SF) diferente para que o banco de dados caiba na 
 - **Análise A (within-tier):** mesma instância, configs diferentes → comparação direta de custo e desempenho
 - **Análise B (cross-tier):** normalizar pelo SF → `custo_por_SF = custo_run / SF` como métrica comparável
 
-### Resultados — Análise A: valor do tuning dentro de cada tier
+### Resultados: Análise A: valor do tuning dentro de cada tier
 
 Comparação entre configuração ruim (p90 de duração) vs melhor configuração real encontrada no dataset, dentro do mesmo tier:
 
@@ -1061,14 +1061,14 @@ Comparação entre configuração ruim (p90 de duração) vs melhor configuraç�
 | medium | 1.4× | 15–32% | R$ 7,71 |
 | high | **3.5×** | **23%** | **R$ 32,25** |
 
-**Interpretação:** no HIGH tier (o mais caro), escolher uma configuração ruim pode custar o dobro do tempo e do dinheiro em relação à melhor configuração disponível. O meta-modelo identifica boas configurações sem necessidade de testar todas — essa é a contribuição prática central do trabalho.
+**Interpretação:** no HIGH tier (o mais caro), escolher uma configuração ruim pode custar o dobro do tempo e do dinheiro em relação à melhor configuração disponível. O meta-modelo identifica boas configurações sem necessidade de testar todas: essa é a contribuição prática central do trabalho.
 
 Valores concretos para o HIGH tier:
 - Config ruim (p90): 140 min / run → R$ 4,59/run → **R$ 137,59/mês**
 - Melhor config real: 108 min / run → R$ 3,51/run → **R$ 105,34/mês**
 - Economia: **R$ 32,25/mês** em regime de relatório diário
 
-### Resultados — Análise B: eficiência entre tiers (normalizado por SF)
+### Resultados: Análise B: eficiência entre tiers (normalizado por SF)
 
 | Tier | Custo/run | Custo/SF | Relativo ao LOW |
 |------|-----------|----------|-----------------|
@@ -1076,7 +1076,7 @@ Valores concretos para o HIGH tier:
 | medium | $0.249 | $0.124/SF | +29% por unidade |
 | high | $0.611 | $0.153/SF | +58% por unidade |
 
-**Interpretação:** instâncias maiores pagam um prêmio por SF processado. O LOW tier é o mais custo-eficiente por unidade de dado. No entanto, isso não implica "sempre use LOW" — o SF deve ser escolhido de acordo com o tamanho real do banco de dados em produção.
+**Interpretação:** instâncias maiores pagam um prêmio por SF processado. O LOW tier é o mais custo-eficiente por unidade de dado. No entanto, isso não implica "sempre use LOW": o SF deve ser escolhido de acordo com o tamanho real do banco de dados em produção.
 
 ### Como reportar no TCC
 
@@ -1102,7 +1102,7 @@ python ml/cost_analysis.py --features data/processed/features.csv --tier high
 
 ---
 
-## 28. Arquitetura do projeto — Cookiecutter Data Science adaptado
+## 28. Arquitetura do projeto: Cookiecutter Data Science adaptado
 
 **Data:** 2026-05-30
 
@@ -1114,11 +1114,11 @@ Com o pipeline de coleta e o modelo ML consolidados, o projeto passou por uma re
 
 O [CCDS v2](https://cookiecutter-data-science.drivendata.org/) é o padrão de facto em projetos acadêmicos de ML. Seus princípios centrais aplicados aqui:
 
-1. **Raw data is immutable** — os JSONs dos benchmarks (`data/raw/`) nunca são editados in-place
-2. **Dados não vão pro git** — `data/raw/` e `data/models/` estão no `.gitignore`
-3. **Processados são versionados** — `data/processed/features.csv` (984 KB) está commitado, permitindo reproduzir todo o ML sem os 2.2 GB de dados brutos
-4. **Exploração separada de produção** — `notebooks/poc.py` separado de `ml/`
-5. **Relatórios separados do código** — `reports/figures/` para figuras do TCC
+1. **Raw data is immutable**: os JSONs dos benchmarks (`data/raw/`) nunca são editados in-place
+2. **Dados não vão pro git**: `data/raw/` e `data/models/` estão no `.gitignore`
+3. **Processados são versionados**: `data/processed/features.csv` (984 KB) está commitado, permitindo reproduzir todo o ML sem os 2.2 GB de dados brutos
+4. **Exploração separada de produção**: `notebooks/poc.py` separado de `ml/`
+5. **Relatórios separados do código**: `reports/figures/` para figuras do TCC
 
 ### Adaptações ao CCDS
 
@@ -1135,17 +1135,17 @@ O CCDS assume um único pacote Python (`meu_projeto/`). Este projeto tem múltip
 ### Mudanças implementadas
 
 **Diretórios criados:**
-- `data/raw/` — benchmark JSONs (2.2 GB, gitignored)
-- `data/processed/` — `features.csv` (984 KB, versionado)
-- `data/models/` — modelos XGBoost treinados (gitignored)
-- `notebooks/` — exploração (`poc.py` movido de `ml/`)
-- `reports/figures/` — figuras para o TCC
-- `references/` — papers e material de referência
-- `logs/` — logs de execução em runtime (gitignored)
+- `data/raw/`: benchmark JSONs (2.2 GB, gitignored)
+- `data/processed/`: `features.csv` (984 KB, versionado)
+- `data/models/`: modelos XGBoost treinados (gitignored)
+- `notebooks/`: exploração (`poc.py` movido de `ml/`)
+- `reports/figures/`: figuras para o TCC
+- `references/`: papers e material de referência
+- `logs/`: logs de execução em runtime (gitignored)
 
 **Renomeações de pacotes (git mv, histórico preservado):**
-- `pg_sampler/` → `sampler/` — nome mais limpo e alinhado ao domínio
-- `task_queue/` → `taskqueue/` — evita conflito de nome com stdlib `queue`
+- `pg_sampler/` → `sampler/`: nome mais limpo e alinhado ao domínio
+- `task_queue/` → `taskqueue/`: evita conflito de nome com stdlib `queue`
 
 **Substituição de `sys.path.insert()` por `pip install -e .`:**
 
@@ -1158,7 +1158,7 @@ Todos os scripts `ml/*.py` faziam `sys.path.insert(0, str(Path(__file__).parent.
 
 ### Por que não usar `src/` layout
 
-O CCDS v2 usa flat layout (pacote direto na raiz), não `src/` layout. `src/` layout é para pacotes instaláveis distribuídos via PyPI — não se aplica aqui. Usar `src/` obrigaria a renomear todos os packages internos e mudar ~40 imports sem ganho real para um projeto de TCC não-distribuído.
+O CCDS v2 usa flat layout (pacote direto na raiz), não `src/` layout. `src/` layout é para pacotes instaláveis distribuídos via PyPI: não se aplica aqui. Usar `src/` obrigaria a renomear todos os packages internos e mudar ~40 imports sem ganho real para um projeto de TCC não-distribuído.
 
 ### Decisão sobre dados no git
 
@@ -1169,7 +1169,7 @@ O CCDS v2 usa flat layout (pacote direto na raiz), não `src/` layout. `src/` la
 | `data/models/*.ubj` | ❌ | Gerado por `make train` em segundos |
 | `logs/*.log` | ❌ | Runtime, sem valor de versionamento |
 
-Decisão CCDS: *"Make it possible for anyone to reproduce with only the code + data/processed/"*. O `features.csv` commitado satisfaz esse critério — qualquer pessoa pode clonar o repositório e rodar `make train && make evaluate` sem executar os 20+ dias de benchmarks.
+Decisão CCDS: *"Make it possible for anyone to reproduce with only the code + data/processed/"*. O `features.csv` commitado satisfaz esse critério: qualquer pessoa pode clonar o repositório e rodar `make train && make evaluate` sem executar os 20+ dias de benchmarks.
 
 ### Referências
 - Cookiecutter Data Science v2: https://cookiecutter-data-science.drivendata.org/

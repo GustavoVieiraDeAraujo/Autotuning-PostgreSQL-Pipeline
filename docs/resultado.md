@@ -52,8 +52,8 @@ output/benchmark_results/high/s1s2s3/task_629.json
 | `combination` | str | Rótulo da combinação de stages (ex: `"s1"`, `"s1s2s3"`) |
 | `tier` | str | Tier de hardware (`"low"`, `"medium"`, `"high"`) |
 | `pg_config` | dict | Configuração PostgreSQL exata usada no benchmark |
-| `started_at` | str | ISO 8601 — início da execução da tarefa |
-| `finished_at` | str | ISO 8601 — fim da execução da tarefa |
+| `started_at` | str | ISO 8601: início da execução da tarefa |
+| `finished_at` | str | ISO 8601: fim da execução da tarefa |
 | `duration_s` | float | Duração total em segundos (TPC-H + TPC-DS + overhead) |
 | `status` | str | `"done"`, `"failed"`, ou `"abandoned"` |
 | `tpc_h` | dict | Resultados do benchmark TPC-H |
@@ -140,7 +140,7 @@ Quando uma query falha, `exec_ms` recebe um valor imputado para que as métricas
 |-----------------|-------------------|-------------|
 | `"timeout"` | `_IMPUTE_TIMEOUT_MS` | Query ultrapassou 15 minutos |
 | `"oom"` | `_IMPUTE_OOM_MS` | Container morto pelo OOM killer |
-| `"technical"` | `0` | Erro técnico (não imputa — exclui da média) |
+| `"technical"` | `0` | Erro técnico (não imputa: exclui da média) |
 
 O valor de `_IMPUTE_TIMEOUT_MS` é maior que `_QUERY_TIMEOUT_MS=900_000ms` para que queries com timeout fiquem piores na métrica `geo_mean_exec_ms` do que queries que completaram em 15 minutos. Similarmente, `_IMPUTE_OOM_MS > _IMPUTE_TIMEOUT_MS` pois OOM é pior que timeout.
 
@@ -148,9 +148,9 @@ O valor de `_IMPUTE_TIMEOUT_MS` é maior que `_QUERY_TIMEOUT_MS=900_000ms` para 
 
 | Campo | Tipo | Fórmula | Interpretação |
 |-------|------|---------|---------------|
-| `geo_mean_exec_ms` | float | `exp(mean(log(exec_ms)))` | **Target principal** do ML — menor é melhor |
-| `overall_cache_hit_ratio` | float | `shared_hit / (shared_hit + shared_read)` | Eficiência do `shared_buffers` — maior é melhor |
-| `queries_with_spill` | int | `count(temp_read > 0 or temp_written > 0)` | Pressão de `work_mem` — menor é melhor |
+| `geo_mean_exec_ms` | float | `exp(mean(log(exec_ms)))` | **Target principal** do ML: menor é melhor |
+| `overall_cache_hit_ratio` | float | `shared_hit / (shared_hit + shared_read)` | Eficiência do `shared_buffers`: maior é melhor |
+| `queries_with_spill` | int | `count(temp_read > 0 or temp_written > 0)` | Pressão de `work_mem`: menor é melhor |
 
 **Por que média geométrica?**
 
@@ -160,11 +160,11 @@ A média geométrica é robusta a outliers: uma query que leva 1 hora (timeout) 
 
 | Campo | Interpretação |
 |-------|---------------|
-| `buffers_clean` | Páginas escritas proativamente pelo bgwriter — alto = bgwriter ativo |
-| `maxwritten_clean` | Quantas vezes o bgwriter foi limitado pelo `lru_maxpages` — alto = bgwriter insuficiente |
-| `buffers_backend` | Páginas que backends tiveram que escrever diretamente — alto = pressão sobre o buffer pool |
-| `buffers_alloc` | Total de páginas alocadas — indicador de volume de dados processados |
-| `buffers_checkpoint` | Páginas escritas em checkpoints — alto indica muita atividade de WAL |
+| `buffers_clean` | Páginas escritas proativamente pelo bgwriter: alto = bgwriter ativo |
+| `maxwritten_clean` | Quantas vezes o bgwriter foi limitado pelo `lru_maxpages`: alto = bgwriter insuficiente |
+| `buffers_backend` | Páginas que backends tiveram que escrever diretamente: alto = pressão sobre o buffer pool |
+| `buffers_alloc` | Total de páginas alocadas: indicador de volume de dados processados |
+| `buffers_checkpoint` | Páginas escritas em checkpoints: alto indica muita atividade de WAL |
 
 ## Estrutura de `hw_metrics`
 
@@ -233,7 +233,7 @@ for r in results:
 
 ## Escrita incremental pelo `result_writer`
 
-O `runner/result_writer.py` não escreve o arquivo apenas ao final — ele escreve seções à medida que ficam disponíveis:
+O `runner/result_writer.py` não escreve o arquivo apenas ao final: ele escreve seções à medida que ficam disponíveis:
 
 ```python
 # Fluxo de escrita durante uma tarefa:

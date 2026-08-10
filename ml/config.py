@@ -1,5 +1,5 @@
 """
-Configuração central do pipeline ML — fonte única da verdade.
+Configuração central do pipeline ML: fonte única da verdade.
 
 Todos os módulos (train, evaluate, recommend) importam daqui.
 Para mudar um peso, feature ou hiperparâmetro, editar apenas este arquivo.
@@ -14,7 +14,7 @@ FEATURES_CSV = ROOT / "data" / "processed" / "features.csv"
 MODELS_DIR   = ROOT / "data" / "models"
 
 # ── Features por stage ────────────────────────────────────────────────────
-# NaN para params ausentes no combo — XGBoost roteia NaN nativamente.
+# NaN para params ausentes no combo: XGBoost roteia NaN nativamente.
 
 S1_PARAMS: list[str] = [
     "cfg_jit",
@@ -60,7 +60,7 @@ S3_PARAMS: list[str] = [
 
 HW_COLS: list[str] = ["vcpus", "memory_mb", "sf"]
 
-# Parâmetros fixos por design — variância zero, excluídos do vetor X:
+# Parâmetros fixos por design: variância zero, excluídos do vetor X:
 #   cfg_seq_page_cost       → sempre 1.0 (âncora do planner)
 #   cfg_synchronous_commit  → sempre off (benchmark SELECT-only)
 #   cfg_max_worker_processes→ sempre cpu×2+4 (derivado do hardware)
@@ -82,10 +82,10 @@ ALL_FEATURES: list[str] = S1_PARAMS + S2_PARAMS + S3_PARAMS + HW_COLS  # 36 colu
 #
 # column       : nome da coluna no features.csv
 # transform    : transformação aplicada ao y antes de treinar
-#                'log'   → np.log(y.clip(1))   — skew alto (geo_mean)
-#                'log1p' → np.log1p(y)         — cauda longa (spill)
-#                'none'  → sem transformação   — distribuição ok (cache_hit)
-# direction    : 'minimize' ou 'maximize' — para score e ranking
+#                'log'   → np.log(y.clip(1)): skew alto (geo_mean)
+#                'log1p' → np.log1p(y): cauda longa (spill)
+#                'none'  → sem transformação: distribuição ok (cache_hit)
+# direction    : 'minimize' ou 'maximize': para score e ranking
 # score_weight : peso no score composto (deve somar 1.0 entre os > 0)
 #                0.0 = entra no X_meta mas não no score diretamente
 # model_name   : nome do arquivo salvo em MODELS_DIR
@@ -124,7 +124,7 @@ TARGETS: dict[str, dict] = {
     #   energy  → rapl_energy_total_j  = NaN em 336/336 tasks
 }
 
-# Score composto — aplica-se DENTRO de cada grupo (tier, combination).
+# Score composto: aplica-se DENTRO de cada grupo (tier, combination).
 # Targets com score_weight > 0 e seus pesos (devem somar 1.0).
 SCORE_WEIGHTS: dict[str, float] = {
     name: cfg["score_weight"]
@@ -145,7 +145,7 @@ ABLATION_GROUPS: dict[str, list[str]] = {
 }
 
 # ── Hiperparâmetros base XGBoost ──────────────────────────────────────────
-# Conservadores para 336 amostras — max_depth=4 e min_child_weight=5
+# Conservadores para 336 amostras: max_depth=4 e min_child_weight=5
 # previnem overfitting. Ajustar via Optuna se quiser extrair mais performance.
 
 XGB_PARAMS: dict = dict(
@@ -163,7 +163,7 @@ XGB_PARAMS: dict = dict(
 
 # ── Hiperparâmetros XGBoost Ranker ───────────────────────────────────────
 # Aprende a ordenar configs dentro de cada (tier, combo) via rank:ndcg.
-# Não depende de libgomp1 — funciona com a instalação padrão do XGBoost.
+# Não depende de libgomp1: funciona com a instalação padrão do XGBoost.
 # Alternativa futura: LightGBM LambdaRank (requer sudo apt install libgomp1)
 
 XGB_RANKER_PARAMS: dict = dict(
@@ -191,7 +191,7 @@ TIER_HARDWARE: dict[str, dict] = {
 }
 
 # ── Codificação de parâmetros PostgreSQL ──────────────────────────────────
-# Compartilhado por extract_features.py e recommend.py — fonte única.
+# Compartilhado por extract_features.py e recommend.py: fonte única.
 BOOL_PARAMS: frozenset[str] = frozenset({
     "jit",
     "enable_hashagg", "enable_bitmapscan", "enable_nestloop",

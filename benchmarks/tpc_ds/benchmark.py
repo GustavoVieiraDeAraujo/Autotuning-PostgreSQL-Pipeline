@@ -1,5 +1,5 @@
 """
-Benchmark TPC-DS — wrapper de execução.
+Benchmark TPC-DS: wrapper de execução.
 
 Thin wrapper sobre ``benchmarks.query_executor`` que pré-configura o
 banco de dados ("tpcds") e as 99 queries do TPC-DS.
@@ -41,7 +41,7 @@ def run_benchmark(
 
     Sequência:
         1. Zera contadores (``reset_stats``)
-        2. Executa as 98 queries ativas (Q95 pulada — sempre timeout)
+        2. Executa as 98 queries ativas (Q95 pulada: sempre timeout)
         3. Coleta estatísticas globais (``collect_pg_stats``)
 
     Args:
@@ -54,12 +54,12 @@ def run_benchmark(
 
     Returns:
         Dict com:
-            queries   — lista de 98 dicts (Q95 excluída permanentemente)
-            summary   — métricas agregadas (geo-média, cache hit ratio, spill)
-            pg_stats  — estatísticas do PostgreSQL (bgwriter, wal, settings, ...)
-            total_ms  — tempo total do benchmark (ms)
-            n_success — número de queries bem-sucedidas
-            n_failed  — número de queries com erro
+            queries: lista de 98 dicts (Q95 excluída permanentemente)
+            summary: métricas agregadas (geo-média, cache hit ratio, spill)
+            pg_stats: estatísticas do PostgreSQL (bgwriter, wal, settings, ...)
+            total_ms: tempo total do benchmark (ms)
+            n_success: número de queries bem-sucedidas
+            n_failed: número de queries com erro
     """
     return qx.run_benchmark(container, _ACTIVE_QUERIES, DB_NAME, query_callback,
                             hw_snapshot_fn, task_deadline=task_deadline)

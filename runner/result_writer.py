@@ -7,18 +7,18 @@ A linha é criada vazia quando a tarefa inicia e preenchida incrementalmente
 progresso em tempo real mesmo que o processo seja interrompido.
 
 Substitui o antigo esquema de um arquivo JSON por tarefa
-(``data/raw/{tier}/{combination}/task_{id}.json``) — a escrita atômica
+(``data/raw/{tier}/{combination}/task_{id}.json``): a escrita atômica
 incremental agora é responsabilidade nativa do Postgres (cada UPDATE é uma
 transação), não precisa mais de tmp+fsync+rename nem de chmod pra "travar"
 o arquivo final. Status/motivo de abandono ficam só em ``tasks`` (via
-``ExecutionQueue``) — ``task_results`` guarda exclusivamente o conteúdo do
+``ExecutionQueue``): ``task_results`` guarda exclusivamente o conteúdo do
 benchmark, não o estado do ciclo de vida da tarefa.
 
 Dois campos deliberadamente NÃO são persistidos aqui, porque o pipeline de
 ML nunca os lê (ver docs/decisoes-de-engenharia.md e a limpeza dos datasets
 de coleta) e eram os maiores responsáveis por inchar os antigos arquivos:
     - ``pg_stats`` (dump de configurações/estatísticas do Postgres por tarefa)
-    - ``hw_metrics.samples`` (série temporal bruta — só o resumo agregado é salvo)
+    - ``hw_metrics.samples`` (série temporal bruta: só o resumo agregado é salvo)
 
 Funções
 -------
@@ -54,7 +54,7 @@ def init_task_result(task: dict, started_at: str, dsn: str | None = None) -> int
         dsn:        Connection string do banco de controle.
 
     Returns:
-        O próprio ``task["id"]`` — identifica a tarefa nas demais chamadas
+        O próprio ``task["id"]``: identifica a tarefa nas demais chamadas
         (substitui o antigo ``out_path``).
     """
     with connect(dsn) as conn:
@@ -116,7 +116,7 @@ def finalize_benchmark_section(
 ) -> None:
     """Preenche summary e total_ms da seção do benchmark.
 
-    ``pg_stats`` (se presente em ``result``) é ignorado de propósito — nunca
+    ``pg_stats`` (se presente em ``result``) é ignorado de propósito: nunca
     é lido pelo pipeline de ML e só infla o tamanho do registro.
 
     Args:
@@ -138,7 +138,7 @@ def finalize_benchmark_section(
 def save_hw_metrics(task_id: int, hw_metrics: dict, dsn: str | None = None) -> None:
     """Salva o resumo agregado de métricas de hardware.
 
-    Só ``hw_metrics["summary"]`` é persistido — as amostras brutas
+    Só ``hw_metrics["summary"]`` é persistido: as amostras brutas
     (``hw_metrics["samples"]``) nunca são lidas por nada no projeto.
 
     Args:
@@ -162,7 +162,7 @@ def finalize_task_result(
     """Registra o momento e a duração final da tarefa (sucesso ou abandono).
 
     O status/motivo do ciclo de vida (done/abandoned/reason/error) fica só
-    em ``tasks`` — ver ``ExecutionQueue.mark_done`` / ``mark_abandoned``.
+    em ``tasks``: ver ``ExecutionQueue.mark_done`` / ``mark_abandoned``.
 
     Args:
         task_id:     ID da tarefa.

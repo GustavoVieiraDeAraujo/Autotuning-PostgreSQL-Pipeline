@@ -7,15 +7,15 @@ O módulo `pg_sampler/constraints.py` implementa duas camadas de verificação:
 
 ## Por que a validação existe se o builder já aplica constraints?
 
-O `parameter_builder.py` aplica floors, caps e filtros **durante** a construção — mas a validação existe por razões complementares:
+O `parameter_builder.py` aplica floors, caps e filtros **durante** a construção, mas a validação existe por razões complementares:
 
-**1. Verificar propriedades emergentes**: A estimativa de pico de memória `shared_buffers + work_mem × per_gather × 3` só pode ser verificada após todos os parâmetros terem valores — não é possível aplicá-la na geração de cada parâmetro individualmente.
+**1. Verificar propriedades emergentes**: A estimativa de pico de memória `shared_buffers + work_mem × per_gather × 3` só pode ser verificada após todos os parâmetros terem valores: não é possível aplicá-la na geração de cada parâmetro individualmente.
 
 **2. Segurança contra corrupção**: Se um arquivo JSON de espaço de parâmetros tiver valores inconsistentes, o builder pode gerar uma config que passa na geração mas viola uma constraint na validação.
 
 **3. Verificação cross-stage**: O guidance cross-stage tenta aplicar constraints durante a geração, mas um quantil LHS específico pode colocar um parâmetro numa região que viola outra constraint quando combinado com o valor já gerado de outro stage.
 
-## Diagnóstico preventivo — `diagnose_combined`
+## Diagnóstico preventivo: `diagnose_combined`
 
 ```python
 def diagnose_combined(stage_spaces: StageSpaces, stages: list[int]) -> None
@@ -33,7 +33,7 @@ Executa antes de qualquer geração. Se qualquer invariante falhar, lança `Runt
 | 3 | `max(jit_inline_above_cost) ≥ min(jit_above_cost)` | Idem para inlining |
 | 3 | `max(autovacuum_vacuum_scale_factor) ≥ min(autovacuum_analyze_scale_factor)` | Sempre deve ser possível `vsf ≥ asf` |
 
-## Validação de instância — `validate_combined_config`
+## Validação de instância: `validate_combined_config`
 
 ```python
 def validate_combined_config(
@@ -66,7 +66,7 @@ flowchart TD
     R -->|Não| FAIL["Config descartada → nova tentativa"]
 ```
 
-Cada verificação que falha **adiciona** uma string de erro à lista — o sistema coleta **todos** os erros antes de retornar, não para no primeiro. Isso facilita diagnóstico durante o desenvolvimento.
+Cada verificação que falha **adiciona** uma string de erro à lista: o sistema coleta **todos** os erros antes de retornar, não para no primeiro. Isso facilita diagnóstico durante o desenvolvimento.
 
 ---
 
@@ -156,7 +156,7 @@ cpu_operator_cost ≤ cpu_index_tuple_cost ≤ cpu_tuple_cost
 |-------------|----------------|
 | `parallel_tuple_cost / cpu_tuple_cost > 100×` | `E2: ratio paralelo > 100×` |
 
-Se a razão for muito alta, o planner entende que transferir uma tupla entre workers é 100× mais caro que processar uma tupla serialmente — e vai evitar planos paralelos para praticamente qualquer query.
+Se a razão for muito alta, o planner entende que transferir uma tupla entre workers é 100× mais caro que processar uma tupla serialmente, e vai evitar planos paralelos para praticamente qualquer query.
 
 ### Tamanhos mínimos paralelos
 
@@ -198,7 +198,7 @@ Com 400 páginas por round e 50ms de delay: `400 páginas × 8kB / 0.05s = 64 MB
 
 ## Validação Cross-Stage
 
-### Cross E1+E2 — `_validate_cross_12`
+### Cross E1+E2: `_validate_cross_12`
 
 Executada apenas quando `1 in stages and 2 in stages`.
 

@@ -9,7 +9,7 @@ Constrói sequencialmente as imagens base de dados para cada tier:
 
 Deve ser executado uma única vez antes de rodar os benchmarks.
 Depois de concluído, o runner só precisa subir e derrubar containers com
-diferentes configurações PostgreSQL — sem rebuilds de imagem.
+diferentes configurações PostgreSQL: sem rebuilds de imagem.
 
 Uso
 ---
@@ -60,7 +60,7 @@ def _collect_spec_params() -> dict[str, list[str]]:
         tier_files = list(stage_dir.glob("*.json"))
         if not tier_files:
             continue
-        # Todos os tiers têm os mesmos parâmetros — basta um arquivo
+        # Todos os tiers têm os mesmos parâmetros: basta um arquivo
         space = json.loads(tier_files[0].read_text(encoding="utf-8"))
         for param in space:
             params.setdefault(param, []).append(stage)
@@ -78,7 +78,7 @@ def _run_param_validation() -> bool:
     se qualquer parâmetro não for reconhecido pelo PostgreSQL.
     """
     sep()
-    print(f"\n{CYAN}{BOLD}Validação de Parâmetros — verificando specs contra PostgreSQL{RESET}\n",
+    print(f"\n{CYAN}{BOLD}Validação de Parâmetros: verificando specs contra PostgreSQL{RESET}\n",
           flush=True)
 
     spec_params = _collect_spec_params()
@@ -122,7 +122,7 @@ def _run_param_validation() -> bool:
         if not ready:
             print(f"  {RED}Timeout: PostgreSQL não ficou pronto para validação.{RESET}\n",
                   flush=True)
-            return True  # não bloqueia prepare — falha na validação é não-fatal
+            return True  # não bloqueia prepare: falha na validação é não-fatal
 
         # Consulta pg_settings para obter todos os GUC reconhecidos
         res = container.exec_run(
@@ -145,14 +145,14 @@ def _run_param_validation() -> bool:
             if param in known:
                 status = f"{GREEN}OK{RESET}"
             else:
-                status = f"{RED}INVÁLIDO — não reconhecido pelo PostgreSQL {_PG_IMAGE}{RESET}"
+                status = f"{RED}INVÁLIDO: não reconhecido pelo PostgreSQL {_PG_IMAGE}{RESET}"
             print(f"  {param:<{col_p}} {stages_str:<18} {status}", flush=True)
 
         sep()
         if bad_params:
             print(
                 f"\n{RED}{BOLD}{len(bad_params)} parâmetro(s) inválido(s) encontrado(s).{RESET}\n"
-                f"{RED}Remova-os dos specs antes de gerar a fila — causarão invalid_config "
+                f"{RED}Remova-os dos specs antes de gerar a fila: causarão invalid_config "
                 f"em todas as tasks que os incluírem.{RESET}\n",
                 flush=True,
             )
@@ -202,7 +202,7 @@ def _smoke_test_one(image_tag: str, db_name: str, tier: str, tier_configs: dict)
     """Sobe um container, testa conectividade e tabelas, destrói.
 
     Returns:
-        (ok, mensagem) — ok=True se passou, mensagem descreve o resultado.
+        (ok, mensagem): ok=True se passou, mensagem descreve o resultado.
     """
     container_name = f"{db_name}_smoketest_{tier}"
     container = None
@@ -252,7 +252,7 @@ def _run_smoke_tests(plan: list[dict], tier_configs: dict) -> bool:
         True se todas passaram, False se alguma falhou.
     """
     sep()
-    print(f"\n{CYAN}{BOLD}Smoke Tests — verificação final das 6 imagens{RESET}\n", flush=True)
+    print(f"\n{CYAN}{BOLD}Smoke Tests: verificação final das 6 imagens{RESET}\n", flush=True)
     print(f"  {'#':<3} {'Benchmark':<8} {'Tier':<8} {'Imagem':<28} {'Resultado'}", flush=True)
     sep()
 
@@ -286,7 +286,7 @@ def _run_smoke_tests(plan: list[dict], tier_configs: dict) -> bool:
         )
     else:
         print(
-            f"\n{RED}{BOLD}Smoke tests com falha — corrija antes de executar a fila.{RESET}\n",
+            f"\n{RED}{BOLD}Smoke tests com falha: corrija antes de executar a fila.{RESET}\n",
             flush=True,
         )
 
@@ -308,7 +308,7 @@ def prepare(force: bool = False) -> None:
     plan         = _image_plan()
     tier_configs = json.loads(_DOCKER_CFG.read_text(encoding="utf-8"))
 
-    banner("PREPARE — Construindo e verificando imagens dos benchmarks")
+    banner("PREPARE: Construindo e verificando imagens dos benchmarks")
 
     # ── Status atual ──────────────────────────────────────────────────────────
     print(f"{'#':<3} {'Benchmark':<8} {'Tier':<8} {'SF':<4} {'Imagem':<26} {'Status'}",

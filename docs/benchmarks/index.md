@@ -87,10 +87,10 @@ Cada query tem um timeout individual de **15 minutos** (`_QUERY_TIMEOUT_MS = 900
 | `"oom"` | Container morto pelo OOM killer | `_IMPUTE_OOM_MS` |
 | `"technical"` | Erro técnico (conexão, sintaxe) | 0 |
 
-Queries com falha não interrompem o benchmark — as demais queries continuam sendo executadas.
+Queries com falha não interrompem o benchmark: as demais queries continuam sendo executadas.
 
 ## Páginas desta seção
 
-- [**Containers Docker**](containers.md) — `container.py`: como containers são criados, configurados e removidos
-- [**Imagens Docker**](imagens.md) — `image_builder.py`: como as imagens são construídas com dados TPC pré-carregados
-- [**Execução de Queries**](queries.md) — `query_executor.py`: como queries são executadas e estatísticas coletadas
+- [**Containers Docker**](containers.md): `container.py`: como containers são criados, configurados e removidos
+- [**Imagens Docker**](imagens.md): `image_builder.py`: como as imagens são construídas com dados TPC pré-carregados
+- [**Execução de Queries**](queries.md): `query_executor.py`: como queries são executadas e estatísticas coletadas

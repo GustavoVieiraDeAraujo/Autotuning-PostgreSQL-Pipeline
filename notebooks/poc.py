@@ -1,5 +1,5 @@
 """
-POC — Prova de Conceito do Meta-Modelo de Autotuning PostgreSQL
+POC: Prova de Conceito do Meta-Modelo de Autotuning PostgreSQL
 
 Treina os 4 especialistas XGBoost + ranker LightGBM + meta-modelo Ridge
 sobre os dados atuais e reporta métricas de validação cruzada.
@@ -54,13 +54,13 @@ def load_data() -> pd.DataFrame:
 
 
 def rank_normalize(series: pd.Series) -> pd.Series:
-    """Rank percentual dentro do grupo — 0=pior, 1=melhor."""
+    """Rank percentual dentro do grupo: 0=pior, 1=melhor."""
     return series.rank(pct=True)
 
 
 def compute_score(df: pd.DataFrame) -> pd.Series:
     """
-    Score composto por (tier, combination) — pesos de ml/config.py:SCORE_WEIGHTS.
+    Score composto por (tier, combination): pesos de ml/config.py:SCORE_WEIGHTS.
     Grupos separados garantem comparação justa (hardware igual, combo igual).
     """
     w_geo   = SCORE_WEIGHTS["geo_mean_tpch"]
@@ -219,7 +219,7 @@ def train_meta(oof_preds: dict[str, np.ndarray], score: pd.Series, masks: dict):
 def ablation_study(df: pd.DataFrame, X: pd.DataFrame, y_geo: pd.Series):
     """
     Compara RMSE e Spearman ρ treinando M1 (geo_mean_tpch) com diferentes
-    conjuntos de features — resultado central do estudo de ablação do TCC.
+    conjuntos de features: resultado central do estudo de ablação do TCC.
     """
     print("\n── Ablação: impacto de adicionar stages ao modelo de performance ──")
     groups = {
@@ -241,7 +241,7 @@ def ablation_study(df: pd.DataFrame, X: pd.DataFrame, y_geo: pd.Series):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# 6. SHAP — importância das features
+# 6. SHAP: importância das features
 # ─────────────────────────────────────────────────────────────────────────
 
 def shap_report(model: xgb.XGBRegressor, X: pd.DataFrame, y: pd.Series, top_n: int = 15):
@@ -249,7 +249,7 @@ def shap_report(model: xgb.XGBRegressor, X: pd.DataFrame, y: pd.Series, top_n: i
     try:
         import shap
     except ImportError:
-        print("  shap não instalado — pular")
+        print("  shap não instalado: pular")
         return
 
     mask  = y.notna()
@@ -297,7 +297,7 @@ def ranking_quality(df: pd.DataFrame, score: pd.Series, oof_geo: np.ndarray, geo
 
     if total:
         print(f"\n── Qualidade de ranking (M1 geo_mean → ranking real) ──")
-        print(f"  Precisão@1→top3 : {p1_hits}/{total} grupos ({p1_hits/total*100:.0f}%) — melhor predito está no top-3 real")
+        print(f"  Precisão@1→top3 : {p1_hits}/{total} grupos ({p1_hits/total*100:.0f}%): melhor predito está no top-3 real")
         print(f"  Overlap top-3   : {p3_hits/(total*3)*100:.0f}% de concordância média entre top-3 predito e real")
 
 
@@ -307,7 +307,7 @@ def ranking_quality(df: pd.DataFrame, score: pd.Series, oof_geo: np.ndarray, geo
 
 def main(run_shap: bool = True):
     print("═" * 60)
-    print("  POC — Meta-Modelo PostgreSQL Autotuning")
+    print("  POC: Meta-Modelo PostgreSQL Autotuning")
     print("═" * 60)
 
     # ── Dados ──────────────────────────────────────────────────────────
@@ -340,7 +340,7 @@ def main(run_shap: bool = True):
     if _HAS_LGB:
         ranker, _ = train_ranker(df, X, score)
     else:
-        print("  ranker_lgbm: pulado (libgomp ausente — instale com: sudo apt install libgomp1)")
+        print("  ranker_lgbm: pulado (libgomp ausente: instale com: sudo apt install libgomp1)")
 
     # ── Meta-modelo ─────────────────────────────────────────────────────
     print("\n[4/5] Treinando meta-modelo Ridge...")

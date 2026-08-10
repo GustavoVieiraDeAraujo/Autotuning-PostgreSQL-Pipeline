@@ -12,9 +12,9 @@ Classes
 
 Funções
 -------
-    log(msg, level, indent)  — imprime mensagem com timestamp colorido
-    banner(title)            — imprime cabeçalho em caixa dupla
-    sep(char, width)         — imprime linha separadora
+    log(msg, level, indent): imprime mensagem com timestamp colorido
+    banner(title): imprime cabeçalho em caixa dupla
+    sep(char, width): imprime linha separadora
 """
 
 from datetime import datetime
@@ -47,7 +47,7 @@ _LEVEL_COLORS = {
 
 
 # ---------------------------------------------------------------------------
-# TeeWriter — duplica stdout para arquivo de log (lido pelo dashboard via SSE)
+# TeeWriter: duplica stdout para arquivo de log (lido pelo dashboard via SSE)
 # ---------------------------------------------------------------------------
 
 class TeeWriter:
@@ -114,7 +114,7 @@ class TeeWriter:
 
     @property
     def _stream(self):
-        """Alias para self.original — compatibilidade com código legado."""
+        """Alias para self.original: compatibilidade com código legado."""
         return self.original
 
 

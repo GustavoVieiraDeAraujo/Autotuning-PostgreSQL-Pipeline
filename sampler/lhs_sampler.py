@@ -12,9 +12,9 @@ Funções principais
 
 Funções auxiliares de amostragem (usadas por parameter_builder)
 ---------------------------------------------------------------
-    _pick(choices, q)       — seleciona por quantil ou aleatório
-    _uniform(lo, hi, q)     — amostra float no intervalo [lo, hi]
-    _randint(lo, hi, q)     — amostra inteiro no intervalo [lo, hi]
+    _pick(choices, q): seleciona por quantil ou aleatório
+    _uniform(lo, hi, q): amostra float no intervalo [lo, hi]
+    _randint(lo, hi, q): amostra inteiro no intervalo [lo, hi]
 
 Funções de filtragem de choices
 --------------------------------

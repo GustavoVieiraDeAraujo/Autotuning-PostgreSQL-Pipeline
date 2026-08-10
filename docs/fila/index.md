@@ -143,7 +143,7 @@ while (task := queue.next()) is not None:
 def mark_done(self, task: dict, result: dict | None = None) -> None
 ```
 
-Marca uma tarefa como concluída. O `result` é armazenado no campo `result` da tarefa (opcional — o resultado real é salvo separadamente pelo `result_writer`).
+Marca uma tarefa como concluída. O `result` é armazenado no campo `result` da tarefa (opcional: o resultado real é salvo separadamente pelo `result_writer`).
 
 #### `mark_failed`
 
@@ -264,7 +264,7 @@ def mark_failed(self, task: dict, error: str | None = None) -> None:
     self._save()
 ```
 
-O `cli/run.py` tem `_MAX_RETRIES=3` — consistente com a lógica interna da fila.
+O `cli/run.py` tem `_MAX_RETRIES=3`: consistente com a lógica interna da fila.
 
 ## Integração com o runner
 

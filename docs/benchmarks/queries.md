@@ -74,15 +74,15 @@ Função principal que executa todas as queries de um benchmark e retorna o resu
 
 **Algoritmo:**
 
-1. `reset_stats(conn)` — reseta contadores do `pg_stat_bgwriter`
+1. `reset_stats(conn)`: reseta contadores do `pg_stat_bgwriter`
 2. Para cada query:
    - `SET statement_timeout = '900000ms'`
    - Executa a query com `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`
    - Captura `exec_ms` do `Execution Time` no plano
    - Captura contadores de buffers do plano
    - Em caso de exceção: registra `failure_reason` e imputa `exec_ms`
-3. `collect_pg_stats(conn)` — coleta contadores finais do `pg_stat_bgwriter`
-4. `compute_summary(query_results)` — calcula métricas agregadas
+3. `collect_pg_stats(conn)`: coleta contadores finais do `pg_stat_bgwriter`
+4. `compute_summary(query_results)`: calcula métricas agregadas
 
 ### `run_all_queries`
 
@@ -200,7 +200,7 @@ spill_count = sum(
 
 Conta quantas queries precisaram usar arquivos temporários em disco (spill) por exceder o `work_mem`. Alto número de spills indica que `work_mem` está subdimensionado.
 
-## Resultado por query — estrutura completa
+## Resultado por query: estrutura completa
 
 ```json
 {

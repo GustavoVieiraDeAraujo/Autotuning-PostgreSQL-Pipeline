@@ -1,4 +1,4 @@
-# API Reference — `runner/`
+# API Reference: `runner/`
 
 Referência completa dos módulos de orquestração da execução.
 
@@ -37,11 +37,11 @@ Executa 8 verificações antes de iniciar a execução de benchmarks. Retorna `T
 | 7 | Conectividade TPC-H: `SELECT 1` funciona | Não | Aviso |
 | 8 | Conectividade TPC-DS: `SELECT 1` funciona | Não | Aviso |
 
-**Verificação 3 — containers obsoletos:**
+**Verificação 3: containers obsoletos:**
 
 Verifica se há containers com nomes que correspondem ao padrão do projeto (`tpch_bench_*`, `tpcds_bench_*`, `*_conntest_*`, `*_smoketest_*`) ainda em execução. Isso pode indicar que uma execução anterior foi encerrada abruptamente sem limpar os containers.
 
-**Verificações 5–8 — conectividade:**
+**Verificações 5–8: conectividade:**
 
 Para cada tier, inicia um container temporário `{db_name}_conntest_{tier}` com as imagens construídas pelo prepare, executa `SELECT 1` e conta as tabelas, depois remove o container. Essas verificações validam que as imagens Docker estão funcionais e contêm os dados esperados.
 
@@ -74,8 +74,8 @@ Executa uma tarefa completa: TPC-H + TPC-DS + coleta de métricas.
 **Retorna:** Tupla `(tpch_result, tpcds_result, hw_metrics)`.
 
 **Lança:**
-- `InvalidConfigError` — (re-exportada de `benchmarks.container`) se o PostgreSQL rejeitar a config
-- `TaskTimeoutError` — (re-exportada de `benchmarks.query_executor`) se o tempo total exceder o timeout do tier
+- `InvalidConfigError`: (re-exportada de `benchmarks.container`) se o PostgreSQL rejeitar a config
+- `TaskTimeoutError`: (re-exportada de `benchmarks.query_executor`) se o tempo total exceder o timeout do tier
 
 **Timeout por tier:**
 
@@ -214,7 +214,7 @@ def append_query_result(
 ) -> None
 ```
 
-Adiciona o resultado de uma query individual ao arquivo. Chamado a cada query durante a execução — permite inspecionar progresso em tempo real.
+Adiciona o resultado de uma query individual ao arquivo. Chamado a cada query durante a execução: permite inspecionar progresso em tempo real.
 
 #### `finalize_benchmark_section`
 

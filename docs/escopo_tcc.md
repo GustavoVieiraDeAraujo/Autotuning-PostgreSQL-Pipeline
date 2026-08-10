@@ -74,7 +74,7 @@ Um modelo que aprende a mapear `(configuração de parâmetros, hardware)` → `
 Executar um benchmark completo (TPC-H + TPC-DS) leva ~30 minutos por configuração. O meta-modelo faz a predição em milissegundos, viabilizando busca em larga escala.
 
 ### Arquitetura adotada
-- **XGBRanker** (rank:ndcg) — modelo de ranking que ordena configurações dentro de grupos de mesmo hardware/stage
+- **XGBRanker** (rank:ndcg): modelo de ranking que ordena configurações dentro de grupos de mesmo hardware/stage
 - 4 modelos especialistas: `geo_mean_tpch`, `geo_mean_tpcds`, `cache_hit_tpch`, `spill_tpcds`
 - Score final: `0.65 × rank_norm(1/geo_tpch) + 0.35 × rank_norm(cache_tpch)`
 - Validação: KFold(5) com OOF predictions
@@ -83,7 +83,7 @@ Executar um benchmark completo (TPC-H + TPC-DS) leva ~30 minutos por configuraç
 | Métrica | O que mede | Por que usar |
 |---------|------------|--------------|
 | ρ Spearman | Correlação de ranking | Invariante à escala dos outliers |
-| RMSE | Erro de predição absoluto | Sensível a outliers — usar com cautela |
+| RMSE | Erro de predição absoluto | Sensível a outliers: usar com cautela |
 | Top-K Accuracy | % vezes que a melhor config real está no top-K predito | Intuitivo, mas escala com tamanho do grupo |
 
 **Nota sobre Top-K:** com mais dados (mais grupos maiores), a métrica fica mais difícil estruturalmente. Queda de Top-3 de 62%→52% entre rodadas é explicada pelo aumento de grupos de 24→48 configs, não por piora real do modelo. Usar ρ como métrica primária.
@@ -94,8 +94,8 @@ Executar um benchmark completo (TPC-H + TPC-DS) leva ~30 minutos por configuraç
 
 ### Objetivo
 Minimizar simultaneamente:
-1. **Custo computacional** — proxy: tipo de instância EC2 (vcpus × memória × preço/hora)
-2. **Tempo de execução** — geo_mean das queries TPC-H e TPC-DS
+1. **Custo computacional**: proxy: tipo de instância EC2 (vcpus × memória × preço/hora)
+2. **Tempo de execução**: geo_mean das queries TPC-H e TPC-DS
 
 ### Fronteira de Pareto
 Conjunto de configurações onde não é possível melhorar um objetivo sem piorar o outro. A escolha entre pontos na fronteira é uma decisão do usuário/operador baseada em budget.
@@ -129,7 +129,7 @@ Conjunto de configurações onde não é possível melhorar um objetivo sem pior
 |--------|---------|----------------------------|----------|
 | Rodada 1 | ~48 | 336 | aleatório |
 | Rodada 2 | ~51 | 357 (17 configs/tier × 3 tiers) | diferente |
-| **Total** | ~99 | **672** | — |
+| **Total** | ~99 | **672** |: |
 
 Cada task = 1 configuração rodando TPC-H (20q) + TPC-DS (98q) em 1 stage/tier específico.
 
@@ -157,12 +157,12 @@ Cada task = 1 configuração rodando TPC-H (20q) + TPC-DS (98q) em 1 stage/tier 
 
 ## Trabalho Futuro
 
-1. **Suporte a OLTP** — TPC-C, pgbench; requer novo espaço de parâmetros
-2. **HTAP** — workloads híbridos analítico-transacionais
-3. **Otimização Pareto explícita** — fronteira custo × desempenho com seleção interativa
-4. **Transfer learning entre hardware** — generalizar modelo para instâncias não vistas
-5. **Tuning contínuo** — atualização do modelo com novos dados em produção
-6. **Mais benchmarks** — Star Schema Benchmark (SSB), JOB (Join Order Benchmark)
+1. **Suporte a OLTP**: TPC-C, pgbench; requer novo espaço de parâmetros
+2. **HTAP**: workloads híbridos analítico-transacionais
+3. **Otimização Pareto explícita**: fronteira custo × desempenho com seleção interativa
+4. **Transfer learning entre hardware**: generalizar modelo para instâncias não vistas
+5. **Tuning contínuo**: atualização do modelo com novos dados em produção
+6. **Mais benchmarks**: Star Schema Benchmark (SSB), JOB (Join Order Benchmark)
 
 ---
 

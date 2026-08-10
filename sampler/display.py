@@ -216,7 +216,7 @@ def print_summary_table(
         return _row(f"{color}{cells}{_RESET}") if color else _row(cells)
 
     print(_TOP)
-    print(_title("Resumo Final — Total de Configurações"))
+    print(_title("Resumo Final: Total de Configurações"))
     print(_SEP)
 
     header = f"  {'Combinação':<{_CL - 2}}"

@@ -75,7 +75,7 @@ def _find_all_hwmon(driver_name: str, label: str | None = None) -> list[Path]:
 # Descoberta automática de sensores (executada uma única vez ao importar)
 # ---------------------------------------------------------------------------
 
-# CPU — suporta AMD k10temp e Intel coretemp
+# CPU: suporta AMD k10temp e Intel coretemp
 _CPU_TCTL        = _find_hwmon_temp("k10temp", "Tctl")
 _CPU_SENSOR_NAME = "k10temp"
 
@@ -170,25 +170,25 @@ def snapshot() -> dict[str, Any]:
 
     Returns:
         Dict com as chaves:
-            timestamp_s        — Unix timestamp da leitura
-            cpu_percent        — uso médio de todos os cores (%)
-            cpu_freq_mhz       — frequência atual do primeiro core (MHz)
-            cpu_temp_sensor    — nome do driver hwmon usado ("coretemp" ou "k10temp")
-            cpu_temp_tctl_c    — temperatura Package/Tctl do CPU (°C); Intel ou AMD
-            cpu_temp_cores_c   — lista de temperaturas por core (°C); Core 0..N
-            mem_used_gb        — RAM utilizada (GB)
-            mem_avail_gb       — RAM disponível (GB)
-            mem_percent        — uso de RAM (%)
-            ram_temps_c        — lista de temperaturas dos pentes DDR5 via spd5118 (°C)
-            disk_read_mb_s     — taxa de leitura de disco (MB/s)
-            disk_write_mb_s    — taxa de escrita de disco (MB/s)
-            nvme_temps_c       — lista de temperaturas compostas dos SSDs NVMe (°C)
-            gpu_edge_c         — temperatura edge da GPU AMD (°C)
-            gpu_junction_c     — temperatura junction da GPU AMD (°C)
-            gpu_mem_c          — temperatura da VRAM da GPU AMD (°C)
-            acpitz_temp_c      — temperatura da zona ACPI (chipset/placa-mãe) (°C)
-            wifi_temp_c        — temperatura do adaptador Wi-Fi (°C)
-            rapl_energy_uj     — energia acumulada via Intel RAPL (µJ); None se indisponível
+            timestamp_s: Unix timestamp da leitura
+            cpu_percent: uso médio de todos os cores (%)
+            cpu_freq_mhz: frequência atual do primeiro core (MHz)
+            cpu_temp_sensor: nome do driver hwmon usado ("coretemp" ou "k10temp")
+            cpu_temp_tctl_c: temperatura Package/Tctl do CPU (°C); Intel ou AMD
+            cpu_temp_cores_c: lista de temperaturas por core (°C); Core 0..N
+            mem_used_gb: RAM utilizada (GB)
+            mem_avail_gb: RAM disponível (GB)
+            mem_percent: uso de RAM (%)
+            ram_temps_c: lista de temperaturas dos pentes DDR5 via spd5118 (°C)
+            disk_read_mb_s: taxa de leitura de disco (MB/s)
+            disk_write_mb_s: taxa de escrita de disco (MB/s)
+            nvme_temps_c: lista de temperaturas compostas dos SSDs NVMe (°C)
+            gpu_edge_c: temperatura edge da GPU AMD (°C)
+            gpu_junction_c: temperatura junction da GPU AMD (°C)
+            gpu_mem_c: temperatura da VRAM da GPU AMD (°C)
+            acpitz_temp_c: temperatura da zona ACPI (chipset/placa-mãe) (°C)
+            wifi_temp_c: temperatura do adaptador Wi-Fi (°C)
+            rapl_energy_uj: energia acumulada via Intel RAPL (µJ); None se indisponível
     """
     ts = time.time()
 
@@ -202,7 +202,7 @@ def snapshot() -> dict[str, Any]:
     mem_used_gb  = round(mem.used  / 1024**3, 2)
     mem_avail_gb = round(mem.available / 1024**3, 2)
 
-    # Disco (delta desde última chamada — psutil mantém counters cumulativos)
+    # Disco (delta desde última chamada: psutil mantém counters cumulativos)
     disk_io = _disk_delta()
 
     return {
@@ -271,7 +271,7 @@ _disk_delta()                        # inicializa contadores de disco
 
 
 # ---------------------------------------------------------------------------
-# MetricsCollector — amostragem em background
+# MetricsCollector: amostragem em background
 # ---------------------------------------------------------------------------
 
 class MetricsCollector:
@@ -314,8 +314,8 @@ class MetricsCollector:
 
         Returns:
             Dict com:
-                samples  — lista de snapshots brutos (timeseries)
-                summary  — avg/max/min de cada métrica numérica; inclui
+                samples: lista de snapshots brutos (timeseries)
+                summary: avg/max/min de cada métrica numérica; inclui
                            rapl_energy_total_j, rapl_avg_power_w, duration_s
                            e n_samples quando disponíveis
         """

@@ -47,7 +47,7 @@ _INVALID_CONFIG_PATTERNS = [
 class InvalidConfigError(Exception):
     """PostgreSQL rejeitou um ou mais parâmetros de configuração.
 
-    Falha determinística — nenhum retry vai resolver. A tarefa deve ser
+    Falha determinística: nenhum retry vai resolver. A tarefa deve ser
     marcada como ``abandoned`` imediatamente sem consumir mais tentativas.
     """
 
@@ -93,10 +93,10 @@ def start_postgres_container(
 
     Args:
         tier_config:    Especificação de recursos do container:
-                          cpu            — número de vCPUs
-                          memory_mb      — RAM em MB
-                          memory_swap_mb — swap em MB
-                          shm_size_mb    — tamanho de /dev/shm em MB
+                          cpu: número de vCPUs
+                          memory_mb: RAM em MB
+                          memory_swap_mb: swap em MB
+                          shm_size_mb: tamanho de /dev/shm em MB
         pg_config:      Parâmetros PostgreSQL (saída do config_gen).
         db_name:        Nome do banco de dados PostgreSQL ("tpch" ou "tpcds").
         image:          Imagem Docker a usar (deve ter os dados pré-carregados).

@@ -1,7 +1,7 @@
 """
 Funções de parsing para formatos de valor usados nas etapas de geração.
 
-Cobre: memória (MB/GB). Todas as funções são cacheadas via lru_cache —
+Cobre: memória (MB/GB). Todas as funções são cacheadas via lru_cache: 
 strings idênticas retornam o resultado já computado sem re-parsear.
 """
 

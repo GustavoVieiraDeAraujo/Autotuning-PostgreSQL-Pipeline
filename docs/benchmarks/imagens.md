@@ -59,9 +59,9 @@ Constrói uma imagem Docker com os dados TPC pré-carregados.
 
 **Processo:**
 
-1. Verifica se a imagem já existe via `image_exists()` — se sim, retorna imediatamente
+1. Verifica se a imagem já existe via `image_exists()`: se sim, retorna imediatamente
 2. Cria um container temporário `{benchmark}-build-tmp-sf{scale_factor}` a partir de uma imagem base PostgreSQL com os scripts de inicialização TPC
-3. Aguarda o script de init completar (`_wait_init_complete`) — pode levar de 5 minutos (SF=1) a 1 hora (TPC-DS SF=4)
+3. Aguarda o script de init completar (`_wait_init_complete`): pode levar de 5 minutos (SF=1) a 1 hora (TPC-DS SF=4)
 4. Para o container e faz commit como imagem com a `image_tag`
 5. Remove o container temporário
 

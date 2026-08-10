@@ -1,4 +1,4 @@
-# API Reference — `utils/`
+# API Reference: `utils/`
 
 Referência completa dos módulos utilitários compartilhados por todo o projeto.
 
@@ -38,13 +38,13 @@ class TeeWriter:
 
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
-| `stream` | `IO` | Stream original — normalmente `sys.stdout` |
+| `stream` | `IO` | Stream original: normalmente `sys.stdout` |
 | `path` | `Path` | Arquivo de log onde duplicar a saída |
 | `mode` | `str` | `"w"` sobrescreve, `"a"` acrescenta. Padrão: `"w"` |
 
 **Atributos:**
 
-- `original` — referência ao stream original, usada para restaurar `sys.stdout` no bloco `finally`
+- `original`: referência ao stream original, usada para restaurar `sys.stdout` no bloco `finally`
 
 **Métodos:**
 
@@ -52,10 +52,10 @@ class TeeWriter:
 |--------|-----------|
 | `write(data)` | Escreve em `original` e no arquivo simultaneamente |
 | `flush()` | Faz flush em ambos |
-| `isatty()` | Delega para `original` — preserva comportamento de TTY |
-| `fileno()` | Delega para `original` — compatibilidade com código que inspeciona o fd |
+| `isatty()` | Delega para `original`: preserva comportamento de TTY |
+| `fileno()` | Delega para `original`: compatibilidade com código que inspeciona o fd |
 | `close()` | Fecha apenas o arquivo de log; nunca fecha `original` |
-| `_stream` (property) | Alias para `self.original` — compatibilidade com código legado |
+| `_stream` (property) | Alias para `self.original`: compatibilidade com código legado |
 
 **Padrão de uso em todos os `cli/`:**
 
@@ -85,7 +85,7 @@ def log(msg: str, level: str = "INFO", indent: int = 0) -> None
 
 | Parâmetro | Tipo | Padrão | Descrição |
 |-----------|------|--------|-----------|
-| `msg` | `str` | — | Texto da mensagem |
+| `msg` | `str` |: | Texto da mensagem |
 | `level` | `str` | `"INFO"` | Nível: `"INFO"`, `"OK"`, `"WARN"`, `"ERROR"`, `"HEAD"`, `"DIM"` |
 | `indent` | `int` | `0` | Número de indentações de 2 espaços |
 
@@ -135,7 +135,7 @@ def banner(title: str) -> None
 **Saída típica:**
 ```
 ════════════════════════════════════════════════════════════════════════
-  BENCHMARK RUNNER — TPC-H + TPC-DS PostgreSQL Autotuning
+  BENCHMARK RUNNER: TPC-H + TPC-DS PostgreSQL Autotuning
 ════════════════════════════════════════════════════════════════════════
 ```
 
@@ -268,10 +268,10 @@ Executa limpeza do Docker em dois níveis.
 
 **Sequência de limpeza:**
 
-1. **Containers parados** — remove containers com status `exited`, `dead` ou `created` que não sejam do projeto (prefixos `tpch_bench_`, `tpcds_bench_`, `tpch_conntest_`, `tpcds_conntest_`)
-2. **Imagens dangling** — camadas sem tag e sem container referenciando
-3. **Build cache** — via `docker builder prune -f`
-4. **Imagens sem uso** *(apenas modo agressivo)* — imagens sem container ativo, exceto as essenciais do projeto (`tpch-postgres`, `tpcds-postgres`, `postgres`, `debian`)
+1. **Containers parados**: remove containers com status `exited`, `dead` ou `created` que não sejam do projeto (prefixos `tpch_bench_`, `tpcds_bench_`, `tpch_conntest_`, `tpcds_conntest_`)
+2. **Imagens dangling**: camadas sem tag e sem container referenciando
+3. **Build cache**: via `docker builder prune -f`
+4. **Imagens sem uso** *(apenas modo agressivo)*: imagens sem container ativo, exceto as essenciais do projeto (`tpch-postgres`, `tpcds-postgres`, `postgres`, `debian`)
 
 **Retorna:**
 ```python

@@ -4,11 +4,11 @@
 
 O gerador precisa produzir **10 configurações PostgreSQL por tier** que sejam:
 
-1. **Diversificadas** — não podem ser todas parecidas entre si
-2. **Representativas** — devem cobrir todo o range de cada parâmetro
-3. **Sem correlações artificiais** — a escolha de `shared_buffers` não deve influenciar artificialmente a escolha de `work_mem`
+1. **Diversificadas**: não podem ser todas parecidas entre si
+2. **Representativas**: devem cobrir todo o range de cada parâmetro
+3. **Sem correlações artificiais**: a escolha de `shared_buffers` não deve influenciar artificialmente a escolha de `work_mem`
 
-Com 36 parâmetros e apenas 10 configurações por tier, a **amostragem aleatória pura** pode deixar "buracos" no espaço — parâmetros importantes sendo sempre amostrados na mesma região. Com 30 configurações por combinação (padrão), o problema é ainda mais crítico para combinações com 36 dimensões.
+Com 36 parâmetros e apenas 10 configurações por tier, a **amostragem aleatória pura** pode deixar "buracos" no espaço: parâmetros importantes sendo sempre amostrados na mesma região. Com 30 configurações por combinação (padrão), o problema é ainda mais crítico para combinações com 36 dimensões.
 
 ## O que é Latin Hypercube Sampling
 
@@ -180,7 +180,7 @@ work_mem                                         work_mem
  - work_mem 64MB aparece 2×                     - Sem repetição de estratos
 ```
 
-Para o TCC, a importância do LHS é que os **modelos de ML** subsequentes têm um conjunto de configurações que cobre uniformemente o espaço — sem o LHS, regiões inteiras do espaço de busca poderiam não ser amostradas, levando a modelos com extrapolação pobre.
+Para o TCC, a importância do LHS é que os **modelos de ML** subsequentes têm um conjunto de configurações que cobre uniformemente o espaço: sem o LHS, regiões inteiras do espaço de busca poderiam não ser amostradas, levando a modelos com extrapolação pobre.
 
 ## Seed para reprodutibilidade
 
@@ -201,14 +201,14 @@ O `cli/generate.py` aceita `--seed` como argumento de linha de comando.
 
 ## Parâmetros excluídos do LHS
 
-Três parâmetros são **fixos** e excluídos do LHS — não fazem parte das dimensões amostradas:
+Três parâmetros são **fixos** e excluídos do LHS: não fazem parte das dimensões amostradas:
 
 | Parâmetro | Valor fixo | Motivo |
 |-----------|------------|--------|
-| `seq_page_cost` | `1.0` | Âncora do sistema de custo — variar seria redundante com `random_page_cost` |
+| `seq_page_cost` | `1.0` | Âncora do sistema de custo: variar seria redundante com `random_page_cost` |
 | `max_worker_processes` | `cpu × 2 + 4` | Dependência de múltiplos outros parâmetros; fixar simplifica as constraints |
 | `synchronous_commit` | `"off"` | Sem efeito mensurável em workloads SELECT-only como TPC-H/DS |
 
 **Por que `seq_page_cost=1.0` é uma âncora?**
 
-O PostgreSQL avalia todas as estratégias de acesso em termos relativos a `seq_page_cost`. Variar `seq_page_cost=2.0` com `random_page_cost=4.0` produz a mesma decisão do planner que `seq=1.0` com `random=2.0` — a razão é idêntica. Manter `seq=1.0` fixo e variar `random_page_cost` explora toda a relação sem adicionar uma dimensão redundante ao LHS.
+O PostgreSQL avalia todas as estratégias de acesso em termos relativos a `seq_page_cost`. Variar `seq_page_cost=2.0` com `random_page_cost=4.0` produz a mesma decisão do planner que `seq=1.0` com `random=2.0`: a razão é idêntica. Manter `seq=1.0` fixo e variar `random_page_cost` explora toda a relação sem adicionar uma dimensão redundante ao LHS.

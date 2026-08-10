@@ -1,8 +1,8 @@
 """
-Conexão com o Postgres de controle (fila + resultados) — ver db/schema.sql.
+Conexão com o Postgres de controle (fila + resultados): ver db/schema.sql.
 
 Não confundir com os containers Postgres efêmeros usados pelos benchmarks
-TPC-H/TPC-DS (benchmarks/container.py) — este é um único banco persistente,
+TPC-H/TPC-DS (benchmarks/container.py): este é um único banco persistente,
 compartilhado por todos os workers da fila, potencialmente em máquinas
 diferentes.
 
@@ -30,7 +30,7 @@ def connect(dsn: str | None = None) -> psycopg.Connection:
 
     Autocommit (cada operação da fila é uma única query atômica) e rows
     como dict (compatível com o formato de tarefa usado em todo o projeto).
-    Conexões são de curta duração — abertas e fechadas por operação, não
+    Conexões são de curta duração: abertas e fechadas por operação, não
     mantidas vivas entre chamadas, já que uma tarefa pode levar horas entre
     um `next()` e o `mark_done()` correspondente.
     """

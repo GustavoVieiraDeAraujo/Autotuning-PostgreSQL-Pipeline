@@ -10,7 +10,7 @@ Tratamento de tarefas incompletas
   done      → tpch_total_ms e tpcds_total_ms usam o valor registrado
   abandoned → soma exec_ms das queries concluídas + imputa _IMPUTE_TIMEOUT_MS
               para cada query que não chegou a rodar (a tarefa foi cortada pelo
-              timeout do tier, não pela query em si — as queries restantes
+              timeout do tier, não pela query em si: as queries restantes
               teriam sido lentas também)
   running   → ignoradas (em execução)
 
@@ -18,14 +18,14 @@ Imputação de falhas por query (dentro das queries concluídas)
 --------------------------------------------------------------
   "ok"        → exec_ms real (sem imputação)
   "timeout"   → exec_ms = 900000 ms (15 min, limite por query)
-  "oom"       → exec_ms = 1350000 ms (1.5× timeout — pior que timeout)
+  "oom"       → exec_ms = 1350000 ms (1.5× timeout: pior que timeout)
   "technical" → exec_ms = 900000 ms (tratado como timeout; falha de infra
                 rara, mas não queremos ignorar a query no somatório)
 
 Colunas de target por query
 ----------------------------
-  tpch_q{N}_ms         (N = 1..22, None para Q17 e Q20 — sempre puladas)
-  tpcds_q{N}_ms        (N = 1..99, None para Q95 — sempre pulada)
+  tpch_q{N}_ms         (N = 1..22, None para Q17 e Q20: sempre puladas)
+  tpcds_q{N}_ms        (N = 1..99, None para Q95: sempre pulada)
   tpch_q{N}_timed_out  (0 = medição real, 1 = imputado/timeout, None = pulada)
   tpcds_q{N}_timed_out (0 = medição real, 1 = imputado/timeout, None = pulada)
 
@@ -40,20 +40,20 @@ Colunas de target por query
 
 Colunas de cache hit ratio
 ---------------------------
-  tpch_cache_hit_ratio   — overall_cache_hit_ratio da summary (None se abandonada)
-  tpcds_cache_hit_ratio  — overall_cache_hit_ratio da summary (None se abandonada)
+  tpch_cache_hit_ratio: overall_cache_hit_ratio da summary (None se abandonada)
+  tpcds_cache_hit_ratio: overall_cache_hit_ratio da summary (None se abandonada)
 
 Colunas de hardware (últimas 3 do vetor X)
 -------------------------------------------
-  vcpus      — número de vCPUs do container (2/4/6 para low/medium/high)
-  memory_mb  — RAM alocada em MB (2048/4096/5120)
-  sf         — scale factor do dataset (1/2/4)
+  vcpus: número de vCPUs do container (2/4/6 para low/medium/high)
+  memory_mb: RAM alocada em MB (2048/4096/5120)
+  sf: scale factor do dataset (1/2/4)
   Essas colunas são constantes por tier mas essenciais para que o meta-modelo
   generalize entre tiers sem confundir impacto de config com impacto de hardware.
 
 Saída
 -----
-  data/processed/features.csv   — uma linha por tarefa, pronta para pd.read_csv()
+  data/processed/features.csv: uma linha por tarefa, pronta para pd.read_csv()
 
 Uso
 ---
@@ -78,17 +78,17 @@ _ROOT        = Path(__file__).parent.parent
 _RESULTS_DIR = _ROOT / "data" / "raw"
 _OUTPUT_CSV  = _ROOT / "data" / "processed" / "features.csv"
 
-# Aliases locais — o resto do módulo usa os nomes com underscore prefixo.
+# Aliases locais: o resto do módulo usa os nomes com underscore prefixo.
 _TIER_HARDWARE  = TIER_HARDWARE
 
 # ---------------------------------------------------------------------------
 # Constantes de imputação (espelham query_executor.py)
 # ---------------------------------------------------------------------------
 
-_IMPUTE_TIMEOUT_MS  = 900_000.0        # 15 min — statement_timeout por query
+_IMPUTE_TIMEOUT_MS  = 900_000.0        # 15 min: statement_timeout por query
 _IMPUTE_OOM_MS      = 900_000.0 * 1.5  # pior que timeout: kernel matou o processo
 
-# Q17 e Q20 (TPC-H) e Q95 (TPC-DS) são puladas permanentemente — sempre timeout.
+# Q17 e Q20 (TPC-H) e Q95 (TPC-DS) são puladas permanentemente: sempre timeout.
 # O total de queries ativas usadas na imputação de tasks abandonadas reflete isso.
 _TPCH_TOTAL_QUERIES  = 20   # 22 − Q17 − Q20
 _TPCDS_TOTAL_QUERIES = 98   # 99 − Q95
@@ -103,13 +103,13 @@ _TPCDS_SKIP    = frozenset({95})
 # Mapeamento de parâmetros
 # ---------------------------------------------------------------------------
 
-# Aliases — definidos em ml/config.py, importados no topo do módulo.
+# Aliases: definidos em ml/config.py, importados no topo do módulo.
 _BOOL_PARAMS   = BOOL_PARAMS
 _MEMORY_PARAMS = MEMORY_PARAMS
 
 # Ordem canônica das colunas de feature (prefixo "cfg_" no CSV)
 _ALL_PARAMS: list[str] = [
-    # --- Etapa 1 — memória, paralelismo, toggles básicos ---
+    # --- Etapa 1: memória, paralelismo, toggles básicos ---
     "jit",
     "seq_page_cost",
     "random_page_cost",
@@ -126,7 +126,7 @@ _ALL_PARAMS: list[str] = [
     "enable_parallel_hash",
     "enable_sort",
     "synchronous_commit",
-    # --- Etapa 2 — custos CPU, collapse limits, hash memory, toggles join ---
+    # --- Etapa 2: custos CPU, collapse limits, hash memory, toggles join ---
     "cpu_tuple_cost",
     "cpu_index_tuple_cost",
     "cpu_operator_cost",
@@ -139,7 +139,7 @@ _ALL_PARAMS: list[str] = [
     "hash_mem_multiplier",
     "enable_mergejoin",
     "enable_hashjoin",
-    # --- Etapa 3 — execução avançada, I/O background ---
+    # --- Etapa 3: execução avançada, I/O background ---
     "enable_memoize",
     "enable_gathermerge",
     "enable_incremental_sort",
@@ -195,7 +195,7 @@ def _query_exec_ms(q: dict) -> float:
 
     Se exec_ms já está imputado no JSON (timeout/oom), usa esse valor.
     Para falhas técnicas (exec_ms=None), usa _IMPUTE_TIMEOUT_MS como
-    conservador — a query não completou por razão não relacionada à config,
+    conservador: a query não completou por razão não relacionada à config,
     mas não queremos ignorá-la no somatório do target.
     """
     v = q.get("exec_ms")
@@ -268,7 +268,7 @@ def _per_query_timed_out(
     """
     Retorna um dict {query_id: 0|1|None} indicando se a medição é imputada.
 
-    1 = valor imputado (timeout, oom, não executou — não é medição real)
+    1 = valor imputado (timeout, oom, não executou: não é medição real)
     0 = medição real ("ok" ou "technical" com exec_ms registrado)
     None = query pulada permanentemente (skip_ids)
 
@@ -375,7 +375,7 @@ def extract(results_dirs: Path | list[Path], output_csv: Path) -> list[dict]:
             "tpcds_queries_with_spill":   tpcds_summary.get("queries_with_spill"),
         }
 
-        # Targets por query — tpch_q{N}_ms / tpcds_q{N}_ms
+        # Targets por query: tpch_q{N}_ms / tpcds_q{N}_ms
         tpch_per_q  = _per_query_ms(tpch_bench,  _TPCH_ALL_IDS,  _TPCH_SKIP)
         tpcds_per_q = _per_query_ms(tpcds_bench, _TPCDS_ALL_IDS, _TPCDS_SKIP)
         for qid in _TPCH_ALL_IDS:
@@ -383,7 +383,7 @@ def extract(results_dirs: Path | list[Path], output_csv: Path) -> list[dict]:
         for qid in _TPCDS_ALL_IDS:
             row[f"tpcds_q{qid}_ms"] = tpcds_per_q[qid]
 
-        # Flags de imputação — tpch_q{N}_timed_out / tpcds_q{N}_timed_out
+        # Flags de imputação: tpch_q{N}_timed_out / tpcds_q{N}_timed_out
         # 1 = valor imputado (timeout/oom/não executou), 0 = medição real, None = query pulada
         tpch_to  = _per_query_timed_out(tpch_bench,  _TPCH_ALL_IDS,  _TPCH_SKIP)
         tpcds_to = _per_query_timed_out(tpcds_bench, _TPCDS_ALL_IDS, _TPCDS_SKIP)
@@ -396,7 +396,7 @@ def extract(results_dirs: Path | list[Path], output_csv: Path) -> list[dict]:
         for param in _ALL_PARAMS:
             row[f"cfg_{param}"] = _encode(param, cfg.get(param))
 
-        # Hardware context — últimas 3 colunas do vetor X.
+        # Hardware context: últimas 3 colunas do vetor X.
         # Permitem ao meta-modelo distinguir o impacto de uma config no LOW
         # (2vCPU/2GB/SF=1) do impacto no HIGH (6vCPU/5GB/SF=4).
         hw = _TIER_HARDWARE.get(d.get("tier", ""), {})

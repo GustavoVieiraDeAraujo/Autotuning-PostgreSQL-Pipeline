@@ -5,14 +5,14 @@ Fórmulas transcritas fielmente do código-fonte real do pgtune
 (github.com/le0pard/pgtune, src/features/configuration/configurationSlice.js,
 lido via `gh api` em 2026-08-09), assumindo:
     db_type = "Data Warehouse" (o mais próximo do workload OLAP TPC-H/TPC-DS)
-    hd_type = "SSD"            (mesma suposição do resto do projeto — Docker
+    hd_type = "SSD"            (mesma suposição do resto do projeto: Docker
                                  sobre NVMe local, não HDD giratório)
     db_size = "mid_ram"        (opção padrão do próprio pgtune; não medimos o
                                  tamanho real em disco de cada base TPC)
 
 Achado relevante para o TCC: pgtune SÓ calcula shared_buffers,
 effective_cache_size, default_statistics_target, random_page_cost, work_mem e
-os 2 parâmetros de paralelismo (quando cpuNum>=4) — nenhum dos 26 outros
+os 2 parâmetros de paralelismo (quando cpuNum>=4): nenhum dos 26 outros
 parâmetros do nosso espaço de busca (toggles enable_*, custos de CPU,
 collapse_limit, hash_mem_multiplier) é tocado pelo pgtune. Isso por si só é
 um dado comparativo: uma calculadora heurística de mercado cobre ~7/33 (21%)
@@ -33,7 +33,7 @@ def pgtune_config(tier: str) -> dict:
     cpu_num = hw["vcpus"]
     total_kb = hw["memory_mb"] * 1024
 
-    cfg = dict(DEFAULT_PG_CONFIG)  # pgtune não toca no resto — herda o default
+    cfg = dict(DEFAULT_PG_CONFIG)  # pgtune não toca no resto: herda o default
 
     shared_buffers_kb = math.floor(total_kb / 4)
     cfg["shared_buffers"] = f"{shared_buffers_kb // 1024}MB"
@@ -51,7 +51,7 @@ def pgtune_config(tier: str) -> dict:
         cfg["max_parallel_workers_per_gather"] = workers_per_gather
         parallel_for_work_mem = cpu_num
     else:
-        # pgtune não define parâmetros de paralelismo com <4 vCPUs — usa o
+        # pgtune não define parâmetros de paralelismo com <4 vCPUs: usa o
         # default interno max_worker_processes=8 só pro cálculo de work_mem.
         parallel_for_work_mem = 8
 

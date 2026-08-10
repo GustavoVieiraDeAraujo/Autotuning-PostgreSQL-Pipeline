@@ -1,7 +1,7 @@
 .PHONY: setup generate run build-images docs docs-build clean-results features train evaluate tune recommend cost-analysis db-up db-down db-reset
 
 # ----------------------------------------------------------------------------
-# Setup — cria ambiente e instala pacotes (inclui pip install -e .)
+# Setup: cria ambiente e instala pacotes (inclui pip install -e .)
 # ----------------------------------------------------------------------------
 
 setup:
@@ -13,7 +13,7 @@ setup:
 	@echo "Ambiente pronto."
 
 # ----------------------------------------------------------------------------
-# Banco de controle (fila + resultados) — Postgres em container dedicado,
+# Banco de controle (fila + resultados): Postgres em container dedicado,
 # separado dos containers Postgres efêmeros dos benchmarks.
 # ----------------------------------------------------------------------------
 
@@ -78,7 +78,7 @@ clean-results:
 	@echo "Feito."
 
 # ----------------------------------------------------------------------------
-# ML — pipeline de machine learning
+# ML: pipeline de machine learning
 # Pré-requisito: make features (ou ter data/processed/features.csv)
 # ----------------------------------------------------------------------------
 

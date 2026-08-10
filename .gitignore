@@ -20,13 +20,13 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# ── output/ — diretório legado (substituído por data/ e logs/)  ──────────
+# ── output/: diretório legado (substituído por data/ e logs/)  ──────────
 output/
 
 # ── Gerado por pip install -e . ───────────────────────────────────────────
 *.egg-info/
 
-# ── data/ — estrutura CCDS (Cookiecutter Data Science) ───────────────────
+# ── data/: estrutura CCDS (Cookiecutter Data Science) ───────────────────
 # data/raw/       → benchmark results JSON originais (2.2 GB, não versionados);
 #                   EXCEÇÃO: data/raw/rodada{1,2}/ são as versões "enxutas"
 #                   (~2,8 MB cada, só os campos que extract_features.py lê),

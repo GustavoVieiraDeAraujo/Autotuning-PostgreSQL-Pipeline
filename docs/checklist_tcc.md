@@ -1,4 +1,4 @@
-# Checklist do TCC — O que já temos vs O que falta
+# Checklist do TCC: O que já temos vs O que falta
 
 > Mapeamento de cada seção da dissertação para os artefatos e resultados disponíveis.
 > Use este documento para saber o que já pode ser escrito com base no que foi produzido.
@@ -54,7 +54,7 @@
 
 ## 3. Trabalhos Relacionados
 
-**O que escrever:** OtterTune, CDBTune, ResTune, LlamaTune, GPTuner — e onde este trabalho se diferencia.
+**O que escrever:** OtterTune, CDBTune, ResTune, LlamaTune, GPTuner, e onde este trabalho se diferencia.
 
 | Item | Status | Referência |
 |------|--------|------------|

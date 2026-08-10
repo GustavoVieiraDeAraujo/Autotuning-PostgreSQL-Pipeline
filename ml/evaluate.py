@@ -1,16 +1,16 @@
 """
-Avaliação do meta-modelo — ablação por stage, SHAP e qualidade de ranking.
+Avaliação do meta-modelo: ablação por stage, SHAP e qualidade de ranking.
 
 Lê os modelos treinados em data/models/ e os dados de data/processed/features.csv,
 e produz três relatórios:
 
-  1. Tabela de ablação — RMSE e Spearman ρ de M1 (geo_mean_tpch) treinado com
+  1. Tabela de ablação: RMSE e Spearman ρ de M1 (geo_mean_tpch) treinado com
      S1 / S1+S2 / S1+S2+S3. Resultado central do estudo de ablação do TCC.
 
-  2. SHAP — importância de features por stage para M1. Gráfico ASCII no
+  2. SHAP: importância de features por stage para M1. Gráfico ASCII no
      terminal e dados salvos em data/models/shap_importance.json.
 
-  3. Qualidade de ranking — dado o modelo M1, com que frequência a melhor
+  3. Qualidade de ranking: dado o modelo M1, com que frequência a melhor
      config predita está entre as top-3 reais de cada (tier, combo)?
 
 Uso:
@@ -113,7 +113,7 @@ def run_shap(df: pd.DataFrame, model: xgb.XGBRegressor, top_n: int = 18) -> dict
     sv         = explainer.shap_values(Xm)
     importance = pd.Series(np.abs(sv).mean(axis=0), index=Xm.columns).sort_values(ascending=False)
 
-    print(f"\n── SHAP top-{top_n} features — M1 (geo_mean TPC-H) ──")
+    print(f"\n── SHAP top-{top_n} features: M1 (geo_mean TPC-H) ──")
     print(f"  {'Feature':<38} {'SHAP':>7}  Stage")
     print("  " + "─" * 55)
     max_v = importance.iloc[0]
@@ -295,7 +295,7 @@ def run_ranking_quality(
     print(f"  Score global ρ       : {rho_global:.3f}")
     print(f"  Score intra-grupo ρ  : {avg_group_rho:.3f} (média por grupo)")
     print(f"  Precisão@1→top3      : {p1_hits}/{total} ({p1_hits/total*100:.0f}%) "
-          f"— melhor predito está no top-3 real")
+          f"- melhor predito está no top-3 real")
     print(f"  Overlap top-3        : {p3_hits/(total*3)*100:.0f}% de concordância")
 
     result = {
@@ -318,7 +318,7 @@ def run_ranking_quality(
 
 def run(run_shap_flag: bool = True, retrain: bool = False) -> None:
     print("═" * 60)
-    print("  AVALIAÇÃO — Meta-Modelo PostgreSQL Autotuning")
+    print("  AVALIAÇÃO: Meta-Modelo PostgreSQL Autotuning")
     print("═" * 60)
 
     df    = pd.read_csv(FEATURES_CSV, low_memory=False)
@@ -339,7 +339,7 @@ def run(run_shap_flag: bool = True, retrain: bool = False) -> None:
         oof_m1, m1, _ = train_specialist(df, X, "geo_mean_tpch")
         oof_m3, m3, _ = train_specialist(df, X, "cache_hit_tpch")
     elif oof_path.exists():
-        # Carrega OOF salvo pelo train.py — evita re-rodar cross_val_predict
+        # Carrega OOF salvo pelo train.py: evita re-rodar cross_val_predict
         print(f"\nCarregando modelos e OOF de {MODELS_DIR.relative_to(ROOT)}...")
         m1  = load_model(model_name_m1)
         m3  = load_model(model_name_m3)
@@ -360,7 +360,7 @@ def run(run_shap_flag: bool = True, retrain: bool = False) -> None:
             rmse   = math.sqrt(mean_squared_error(ym.loc[common], oof_s.loc[common]))
             print_metric(cfg["model_name"], rmse, rho, len(common), unit)
     else:
-        # OOF não encontrado — re-treina (run train.py primeiro)
+        # OOF não encontrado: re-treina (run train.py primeiro)
         print("\nOOF não encontrado. Re-treinando M1 e M3...")
         print("  Dica: execute 'python ml/train.py' antes para evitar isso.")
         oof_m1, m1, _ = train_specialist(df, X, "geo_mean_tpch")

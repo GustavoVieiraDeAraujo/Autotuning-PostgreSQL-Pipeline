@@ -49,11 +49,11 @@ _SPINNER_FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 
 # Timeout por query: statement_timeout cancela no PostgreSQL; o loop do spinner
 # tem um hard-wall Python-level como failsafe caso o statement_timeout falhe.
-_QUERY_TIMEOUT_MS  = 900_000         # 15 min — statement_timeout (PostgreSQL)
+_QUERY_TIMEOUT_MS  = 900_000         # 15 min: statement_timeout (PostgreSQL)
 _QUERY_TIMEOUT_S   = _QUERY_TIMEOUT_MS // 1000
 _QUERY_HARDWALL_S  = _QUERY_TIMEOUT_S + 30  # grace period antes do kill forçado
 
-# Valor imputado para OOM e timeout no vetor ML — maior que qualquer exec real,
+# Valor imputado para OOM e timeout no vetor ML: maior que qualquer exec real,
 # sinaliza "este config é tão ruim que destruiu o processo".
 # OOM usa 1.5× timeout: é pior (config usou memória até ser morta pelo kernel).
 _IMPUTE_TIMEOUT_MS = float(_QUERY_TIMEOUT_MS)
@@ -74,7 +74,7 @@ class TaskTimeoutError(Exception):
     """Limite de tempo total da tarefa excedido.
 
     Levantado quando o benchmark ultrapassa o teto por tier (2h/4h/8h).
-    A tarefa deve ser marcada como ``abandoned`` sem retry — é uma decisão
+    A tarefa deve ser marcada como ``abandoned`` sem retry: é uma decisão
     administrativa para evitar que uma configuração patológica bloqueie o
     runner por horas.
 
@@ -107,7 +107,7 @@ def reset_stats(container: Container, db_name: str) -> None:
         "SELECT pg_stat_reset();",
         "SELECT pg_stat_reset_shared('bgwriter');",
     ]
-    # pg_stat_statements pode não estar instalada — ignora se não existir
+    # pg_stat_statements pode não estar instalada: ignora se não existir
     stmts_reset = (
         "SELECT pg_stat_statements_reset() "
         "WHERE EXISTS ("
@@ -143,34 +143,34 @@ def run_query(
 
     Returns:
         Dict com as seguintes chaves:
-            id                   — número da query
-            name                 — nome descritivo
-            success              — True se executou sem erro
-            failure_reason       — "ok" | "timeout" | "oom" | "technical"
-            error                — mensagem de erro (se success=False)
-            wall_ms              — tempo total medido pelo Python (ms)
-            plan_ms              — tempo de planejamento do plano JSON (ms)
-            exec_ms              — tempo de execução real (ms); ou valor imputado
+            id: número da query
+            name: nome descritivo
+            success: True se executou sem erro
+            failure_reason: "ok" | "timeout" | "oom" | "technical"
+            error: mensagem de erro (se success=False)
+            wall_ms: tempo total medido pelo Python (ms)
+            plan_ms: tempo de planejamento do plano JSON (ms)
+            exec_ms: tempo de execução real (ms); ou valor imputado
                                    (_IMPUTE_TIMEOUT_MS / _IMPUTE_OOM_MS) se falha
                                    relacionada à config; None se falha técnica
-            rows                 — linhas retornadas pelo nó raiz
-            shared_hit           — buffer hits em shared_buffers
-            shared_read          — leituras de disco (cache miss)
-            shared_written       — blocos escritos durante a query
-            shared_dirtied       — blocos sujos (modificados, não escritos)
-            temp_read_blocks     — blocos temporários lidos (spill)
-            temp_written_blocks  — blocos temporários escritos (spill)
-            cache_hit_ratio      — shared_hit / (shared_hit + shared_read) × 100
-            workers_planned      — workers planejados para paralelismo
-            workers_launched     — workers efetivamente usados em runtime
+            rows: linhas retornadas pelo nó raiz
+            shared_hit: buffer hits em shared_buffers
+            shared_read: leituras de disco (cache miss)
+            shared_written: blocos escritos durante a query
+            shared_dirtied: blocos sujos (modificados, não escritos)
+            temp_read_blocks: blocos temporários lidos (spill)
+            temp_written_blocks: blocos temporários escritos (spill)
+            cache_hit_ratio: shared_hit / (shared_hit + shared_read) × 100
+            workers_planned: workers planejados para paralelismo
+            workers_launched: workers efetivamente usados em runtime
 
         failure_reason e estratégia de imputação para ML:
             "ok"        → exec_ms real; incluir normalmente no treino.
             "timeout"   → exec_ms = _IMPUTE_TIMEOUT_MS (lower bound configurável);
-                          incluir no treino — a config É responsável pela lentidão.
+                          incluir no treino: a config É responsável pela lentidão.
             "oom"       → exec_ms = _IMPUTE_OOM_MS (1.5× timeout, pior que timeout);
-                          incluir no treino — a config consumiu memória até ser morta.
-            "technical" → exec_ms = None; excluir do treino — falha de infraestrutura,
+                          incluir no treino: a config consumiu memória até ser morta.
+            "technical" → exec_ms = None; excluir do treino: falha de infraestrutura,
                           não relacionada à config (conexão, parse, bug no runner).
     """
     qid      = query_dict["id"]
@@ -224,7 +224,7 @@ def run_query(
         })
 
     except OOMKillError as exc:
-        # Container morto pelo kernel por excesso de memória — culpa da config.
+        # Container morto pelo kernel por excesso de memória: culpa da config.
         result["error"]          = str(exc)
         result["wall_ms"]        = round((time.perf_counter() - t0) * 1000, 3)
         result["failure_reason"] = "oom"
@@ -237,12 +237,12 @@ def run_query(
         result["wall_ms"] = wall_ms
 
         if "statement timeout" in err_str.lower() or "canceling statement" in err_str.lower():
-            # PostgreSQL cancelou via statement_timeout — culpa da config.
+            # PostgreSQL cancelou via statement_timeout: culpa da config.
             result["failure_reason"] = "timeout"
             result["exec_ms"]        = _IMPUTE_TIMEOUT_MS
         else:
             # Falha de infraestrutura: conexão perdida, erro de parse, bug no runner.
-            # Não tem relação com a config — excluir do treino ML.
+            # Não tem relação com a config: excluir do treino ML.
             result["failure_reason"] = "technical"
 
     finally:
@@ -261,7 +261,7 @@ def _cancel_active_backend(container: Container, db_name: str, terminate: bool =
 
     Usado como failsafe quando statement_timeout não dispara a tempo.
     Primeiro tenta pg_cancel_backend (graceful SIGINT); se terminate=True usa
-    pg_terminate_backend (SIGTERM — encerra a sessão).
+    pg_terminate_backend (SIGTERM: encerra a sessão).
     """
     fn  = "pg_terminate_backend" if terminate else "pg_cancel_backend"
     sql = (
@@ -305,10 +305,10 @@ def run_all_queries(
     Enquanto cada query roda em uma thread separada, exibe um spinner animado
     com o tempo decorrido e, se disponível, métricas de hardware em tempo real.
     Ao terminar, substitui pela linha final com símbolo de resultado:
-        ✓  — sucesso
-        ⏱  — timeout (statement_timeout do PostgreSQL)
-        †  — OOM (container morto pelo kernel)
-        ✗  — erro técnico (sintaxe, infra, conexão)
+        ✓: sucesso
+        ⏱: timeout (statement_timeout do PostgreSQL)
+        †: OOM (container morto pelo kernel)
+        ✗: erro técnico (sintaxe, infra, conexão)
 
     Timeout: o PostgreSQL cancela a query via statement_timeout (_QUERY_TIMEOUT_MS).
     Como failsafe, se o thread ainda estiver vivo após _QUERY_HARDWALL_S segundos,
@@ -327,14 +327,14 @@ def run_all_queries(
     Returns:
         Lista de dicts, um por query (veja ``run_query()``).
     """
-    # Larguras fixas das colunas — baseadas no máximo de 15 min de timeout:
+    # Larguras fixas das colunas: baseadas no máximo de 15 min de timeout:
     #   exec_ms: "900000.0ms" = 10 chars → {:>9.1f}ms
     #   wall:    "15m00s"     =  6 chars → {:>6}  em parênteses = 8 chars
     #   hw:      "[CPU:99% | 99°C]" = 16 chars (fixo, sem RAM)
     _COL_NAME    = 46   # nome da query, padded à direita
     _COL_EXEC    =  9   # dígitos do exec_ms antes de "ms" (right-align)
     _COL_WALL    =  6   # chars do wall time (right-align dentro de parênteses)
-    _ERASE_EOL   = "\033[K"   # apaga até o fim da linha — elimina resíduo do spinner
+    _ERASE_EOL   = "\033[K"   # apaga até o fim da linha: elimina resíduo do spinner
 
     results = []
     total   = len(queries)
@@ -361,7 +361,7 @@ def run_all_queries(
         while thread.is_alive():
             elapsed = time.perf_counter() - t0
 
-            # Atualiza CPU/temp a cada ~2s (sem RAM — não é necessário no spinner)
+            # Atualiza CPU/temp a cada ~2s (sem RAM: não é necessário no spinner)
             if hw_snapshot_fn and (elapsed - last_hw_t >= 2.0):
                 hw = hw_snapshot_fn()
                 if hw:
@@ -384,7 +384,7 @@ def run_all_queries(
             if not cancelled and elapsed >= _QUERY_HARDWALL_S:
                 print(
                     f"\r{prefix}{_RED}!{_RESET}"
-                    f"  {_DIM}hard-wall {elapsed:.0f}s — cancelando backend...{_RESET}"
+                    f"  {_DIM}hard-wall {elapsed:.0f}s: cancelando backend...{_RESET}"
                     f"{_ERASE_EOL}",
                     flush=True,
                 )
@@ -467,9 +467,9 @@ def run_benchmark(
     """Pipeline completo de benchmark.
 
     Sequência:
-        1. ``reset_stats()``      — zera contadores
-        2. ``run_all_queries()``  — executa todas as queries com spinner
-        3. ``collect_pg_stats()`` — captura estatísticas globais
+        1. ``reset_stats()``: zera contadores
+        2. ``run_all_queries()``: executa todas as queries com spinner
+        3. ``collect_pg_stats()``: captura estatísticas globais
 
     Args:
         container:       Container PostgreSQL em execução com dados carregados.
@@ -482,12 +482,12 @@ def run_benchmark(
 
     Returns:
         Dict com:
-            queries   — lista de dicts com métricas por query
-            summary   — métricas agregadas (veja ``compute_summary()``)
-            pg_stats  — estatísticas do PostgreSQL
-            total_ms  — tempo total do benchmark (ms)
-            n_success — número de queries bem-sucedidas
-            n_failed  — número de queries com erro
+            queries: lista de dicts com métricas por query
+            summary: métricas agregadas (veja ``compute_summary()``)
+            pg_stats: estatísticas do PostgreSQL
+            total_ms: tempo total do benchmark (ms)
+            n_success: número de queries bem-sucedidas
+            n_failed: número de queries com erro
     """
     n_total = len(queries)
     label   = db_name.upper()
@@ -529,12 +529,12 @@ def collect_pg_stats(container: Container, db_name: str) -> dict[str, Any]:
     Coleta dados de cinco visões do sistema, refletindo a carga gerada
     desde o último ``reset_stats()``:
 
-    - **bgwriter**   — checkpoints, buffers escritos, I/O de background
-    - **database**   — cache hit ratio, tuplas lidas/retornadas, temp files
-    - **tables**     — seq_scan vs idx_scan, tuplas lidas por tabela
-    - **tables_io**  — heap/index block reads vs hits por tabela
-    - **wal**        — bytes de WAL gerados (PG14+)
-    - **settings**   — valores GUC efetivos dos parâmetros configurados
+    - **bgwriter**: checkpoints, buffers escritos, I/O de background
+    - **database**: cache hit ratio, tuplas lidas/retornadas, temp files
+    - **tables**: seq_scan vs idx_scan, tuplas lidas por tabela
+    - **tables_io**: heap/index block reads vs hits por tabela
+    - **wal**: bytes de WAL gerados (PG14+)
+    - **settings**: valores GUC efetivos dos parâmetros configurados
 
     Args:
         container: Container PostgreSQL em execução.
@@ -742,7 +742,7 @@ def _collect_wal(container: Container, db_name: str) -> dict:
 
     Retorna dict vazio em versões anteriores do PostgreSQL.
     Métricas relevantes: wal_bytes (total gerado), wal_fpi (full-page images
-    — indicador de checkpoints frequentes).
+: indicador de checkpoints frequentes).
     """
     sql = (
         "SELECT row_to_json(s) FROM ("

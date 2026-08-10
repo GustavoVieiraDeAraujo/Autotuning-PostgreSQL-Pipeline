@@ -1,4 +1,4 @@
-# Resultados Finais — PostgreSQL Autotuning Meta-Modelo
+# Resultados Finais: PostgreSQL Autotuning Meta-Modelo
 
 > **Referência definitiva para escrita do TCC.**
 > Todos os números aqui são resultados reais do modelo treinado com os dados das Rodadas 1 e 2 (672 tasks).
@@ -27,16 +27,16 @@ Treinados com KFold(5), avaliados com OOF predictions no espaço original (antes
 
 | Modelo | Target (CSV) | Transformação | RMSE | Spearman ρ | n |
 |--------|-------------|---------------|------|------------|---|
-| M1 — geo_mean_tpch | `tpch_geo_mean_ms` | log | 13.324 ms | **0.9659** | 672 |
-| M2 — geo_mean_tpcds | `tpcds_geo_mean_ms` | log | 1.764 ms | **0.9770** | 668 |
-| M3 — cache_hit_tpch | `tpch_cache_hit_ratio` | none | 8.37 pp | **0.9271** | 672 |
-| M4 — spill_tpcds | `tpcds_queries_with_spill` | log1p | 5.29 q | **0.9757** | 668 |
+| M1: geo_mean_tpch | `tpch_geo_mean_ms` | log | 13.324 ms | **0.9659** | 672 |
+| M2: geo_mean_tpcds | `tpcds_geo_mean_ms` | log | 1.764 ms | **0.9770** | 668 |
+| M3: cache_hit_tpch | `tpch_cache_hit_ratio` | none | 8.37 pp | **0.9271** | 672 |
+| M4: spill_tpcds | `tpcds_queries_with_spill` | log1p | 5.29 q | **0.9757** | 668 |
 
-> **Interpretar ρ, não RMSE:** o RMSE alto de M1 (13.324 ms) é inflado por 7 tasks outlier com geo_mean > 11.500 ms. ρ=0.966 mostra que o modelo ordena configurações corretamente em 96,6% dos casos — que é o que importa para recomendação.
+> **Interpretar ρ, não RMSE:** o RMSE alto de M1 (13.324 ms) é inflado por 7 tasks outlier com geo_mean > 11.500 ms. ρ=0.966 mostra que o modelo ordena configurações corretamente em 96,6% dos casos: que é o que importa para recomendação.
 
 ---
 
-## 3. Estudo de Ablação — Impacto de Adicionar Stages
+## 3. Estudo de Ablação: Impacto de Adicionar Stages
 
 Modelo M1 (geo_mean_tpch) treinado com diferentes conjuntos de features. Mostra o ganho incremental de cada stage de parâmetros.
 
@@ -46,7 +46,7 @@ Modelo M1 (geo_mean_tpch) treinado com diferentes conjuntos de features. Mostra 
 | S1 + S2 (25 params) | 28 colunas | 13.480 | 0.939 | +5,7 pp |
 | S1 + S2 + S3 (33 params) | 36 colunas | **13.324** | **0.966** | +8,4 pp |
 
-**Conclusão:** tendência monótona clara — mais parâmetros → modelo melhor, com retorno decrescente. Resultado defensável na banca: S3 agrega 2,7 pp adicionais ao ρ vs S1+S2, justificando a coleta dos parâmetros mais complexos.
+**Conclusão:** tendência monótona clara: mais parâmetros → modelo melhor, com retorno decrescente. Resultado defensável na banca: S3 agrega 2,7 pp adicionais ao ρ vs S1+S2, justificando a coleta dos parâmetros mais complexos.
 
 ---
 
@@ -62,11 +62,11 @@ Avalia se o modelo de ranking coloca as melhores configurações no topo dentro 
 | Overlap top-3 | **52%** | 52% de concordância entre top-3 predito e top-3 real |
 | Grupos avaliados | 21 | (apenas grupos com ≥ 4 configs; alguns combos têm menos) |
 
-> **Nota sobre escala:** os 21 grupos têm em média 32 configs (vs 16 na Rodada 1). Top-3 em 32 configs equivale a identificar a melhor configuração dentro dos 9% superiores do espaço amostrado — critério muito mais exigente que os 19% da Rodada 1.
+> **Nota sobre escala:** os 21 grupos têm em média 32 configs (vs 16 na Rodada 1). Top-3 em 32 configs equivale a identificar a melhor configuração dentro dos 9% superiores do espaço amostrado: critério muito mais exigente que os 19% da Rodada 1.
 
 ---
 
-## 5. Importância de Features — SHAP (M1: geo_mean_tpch)
+## 5. Importância de Features: SHAP (M1: geo_mean_tpch)
 
 | Rank | Feature | SHAP médio |valor| | % do total | Stage |
 |------|---------|----------------------|------------|-------|
@@ -81,9 +81,9 @@ Avalia se o modelo de ranking coloca as melhores configurações no topo dentro 
 | 9 | `cfg_enable_hashagg` | 0.0349 | **2.5%** | S1 |
 | 10 | `cfg_enable_parallel_hash` | 0.0327 | **2.4%** | S1 |
 
-**Hardware domina (37%):** `vcpus` + `memory_mb` juntos respondem por 37,1% da importância total. Isso confirma que a escolha do tier de hardware é o fator mais impactante no desempenho OLAP — mais do que qualquer parâmetro de tuning individual.
+**Hardware domina (37%):** `vcpus` + `memory_mb` juntos respondem por 37,1% da importância total. Isso confirma que a escolha do tier de hardware é o fator mais impactante no desempenho OLAP: mais do que qualquer parâmetro de tuning individual.
 
-**Top parâmetro de tuning:** `enable_hashjoin` (10,7%) — controla o uso de hash joins, crítico para queries analíticas com grandes joins.
+**Top parâmetro de tuning:** `enable_hashjoin` (10,7%): controla o uso de hash joins, crítico para queries analíticas com grandes joins.
 
 ---
 
@@ -106,7 +106,7 @@ score = 0.65 × rank_norm(1/geo_mean_tpch) + 0.35 × rank_norm(cache_hit_tpch)
 
 ## 7. Análise de Custo-Efetividade em Nuvem
 
-### 7a. Tuning dentro do mesmo tier (comparação direta — mesmo hardware)
+### 7a. Tuning dentro do mesmo tier (comparação direta: mesmo hardware)
 
 | Tier | Config ruim (p90) | Melhor config real | Speedup TPC-H | Economia custo | Economia mensal¹ |
 |------|------------------|--------------------|---------------|----------------|-----------------|
@@ -118,7 +118,7 @@ score = 0.65 × rank_norm(1/geo_mean_tpch) + 0.35 × rank_norm(cache_hit_tpch)
 
 > **Conclusão:** escolher a configuração errada no HIGH tier pode custar 3,5× mais tempo e 23% mais dinheiro. O meta-modelo identifica a boa configuração sem testar todas.
 
-### 7b. Eficiência entre tiers — custo por SF (normalizado por volume de dados)
+### 7b. Eficiência entre tiers: custo por SF (normalizado por volume de dados)
 
 | Tier | Instância EC2 | Custo/run | Custo/SF | Relativo |
 |------|--------------|-----------|----------|----------|
@@ -150,10 +150,10 @@ score = 0.65 × rank_norm(1/geo_mean_tpch) + 0.35 × rank_norm(cache_hit_tpch)
 | Arquivo | Descrição | Caminho |
 |---------|-----------|---------|
 | Features (CSV) | 672 tasks × 292 colunas | `output/features.csv` |
-| M1 — geo_mean_tpch | XGBRegressor treinado | `output/models/m1_geo_tpch.ubj` |
-| M2 — geo_mean_tpcds | XGBRegressor treinado | `output/models/m2_geo_tpcds.ubj` |
-| M3 — cache_hit_tpch | XGBRegressor treinado | `output/models/m3_cache_tpch.ubj` |
-| M4 — spill_tpcds | XGBRegressor treinado | `output/models/m4_spill_tpcds.ubj` |
+| M1: geo_mean_tpch | XGBRegressor treinado | `output/models/m1_geo_tpch.ubj` |
+| M2: geo_mean_tpcds | XGBRegressor treinado | `output/models/m2_geo_tpcds.ubj` |
+| M3: cache_hit_tpch | XGBRegressor treinado | `output/models/m3_cache_tpch.ubj` |
+| M4: spill_tpcds | XGBRegressor treinado | `output/models/m4_spill_tpcds.ubj` |
 | Ranker | XGBRanker (rank:ndcg) | `output/models/ranker.ubj` (via train.py) |
 | Métricas de treino | RMSE + ρ por modelo | `output/models/train_metrics.json` |
 | Ablação | RMSE + ρ por grupo de features | `output/models/ablation_results.json` |
@@ -169,7 +169,7 @@ score = 0.65 × rank_norm(1/geo_mean_tpch) + 0.35 × rank_norm(cache_hit_tpch)
 
 O CSV possui 299 colunas; análise de variância e SHAP revela o seguinte:
 
-### Colunas sempre NaN (7) — sem sinal, nunca devem entrar no modelo
+### Colunas sempre NaN (7): sem sinal, nunca devem entrar no modelo
 
 | Coluna | Motivo |
 |--------|--------|
@@ -178,9 +178,9 @@ O CSV possui 299 colunas; análise de variância e SHAP revela o seguinte:
 | `tpcds_q95_ms` | Q95 skipada permanentemente |
 | `tpch_q17_timed_out`, `tpch_q20_timed_out`, `tpcds_q95_timed_out` | Idem |
 
-### Flags `_timed_out` — 86 zero-variance, 32 com sinal real
+### Flags `_timed_out`: 86 zero-variance, 32 com sinal real
 
-Das 118 colunas `_timed_out` (uma por query), **86 são sempre 0** — essas queries nunca causaram timeout em nenhuma das 668 configurações testadas. As **32 com sinal real** são as queries sensíveis à configuração:
+Das 118 colunas `_timed_out` (uma por query), **86 são sempre 0**: essas queries nunca causaram timeout em nenhuma das 668 configurações testadas. As **32 com sinal real** são as queries sensíveis à configuração:
 
 | Query | Timeouts (de 668) | % |
 |-------|------------------|---|
@@ -192,18 +192,18 @@ Das 118 colunas `_timed_out` (uma por query), **86 são sempre 0** — essas que
 | `tpcds_q81` | 140 | 21% |
 | (mais 26 com < 30 ocorrências cada) | | |
 
-**Interpretação para o TCC:** 73% das queries TPC-DS são robustas à configuração PostgreSQL (nunca timeout). As 4 queries mais críticas (`q1/q4/q11/q74`) falham em mais de 50% dos configs — são o principal gargalo do benchmark e o maior driver para que `work_mem` e `enable_hashjoin` sejam features importantes.
+**Interpretação para o TCC:** 73% das queries TPC-DS são robustas à configuração PostgreSQL (nunca timeout). As 4 queries mais críticas (`q1/q4/q11/q74`) falham em mais de 50% dos configs: são o principal gargalo do benchmark e o maior driver para que `work_mem` e `enable_hashjoin` sejam features importantes.
 
-### Parâmetros cfg com SHAP zero (3) — já excluídos pelo modelo
+### Parâmetros cfg com SHAP zero (3): já excluídos pelo modelo
 
 | Parâmetro | SHAP | Motivo |
 |-----------|------|--------|
 | `cfg_seq_page_cost` | 0,0% | Fixado em 1.0 (âncora do planner) |
 | `cfg_synchronous_commit` | 0,0% | Fixado em `off` (benchmark SELECT-only) |
-| `cfg_max_worker_processes` | 0,0% | Derivado do hardware — variância zero |
+| `cfg_max_worker_processes` | 0,0% | Derivado do hardware: variância zero |
 
 > Esses três já são excluídos via `DROP_PARAMS` em `ml/config.py`. O modelo nunca os viu.
 
 ### Por que `work_mem` aparece com SHAP baixo (0,5%) em geo_mean_tpch
 
-`work_mem` impacta principalmente a quantidade de spill para disco (M4), não o tempo total de execução de queries que não fazem spill. O SHAP calculado sobre M1 (geo_mean_tpch) captura apenas o impacto indireto. Se o SHAP fosse calculado sobre M4 (spill_tpcds), `work_mem` provavelmente apareceria entre os top features — o que justifica ter 4 especialistas separados em vez de um único modelo.
+`work_mem` impacta principalmente a quantidade de spill para disco (M4), não o tempo total de execução de queries que não fazem spill. O SHAP calculado sobre M1 (geo_mean_tpch) captura apenas o impacto indireto. Se o SHAP fosse calculado sobre M4 (spill_tpcds), `work_mem` provavelmente apareceria entre os top features: o que justifica ter 4 especialistas separados em vez de um único modelo.

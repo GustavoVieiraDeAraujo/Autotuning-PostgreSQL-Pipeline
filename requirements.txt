@@ -3,7 +3,7 @@ psutil>=5.9.0
 docker>=7.0.0
 psycopg[binary]>=3.1      # fila e resultados no Postgres de controle (db/)
 
-# ML — extração de features e treinamento
+# ML: extração de features e treinamento
 numpy>=1.26.0
 pandas>=2.2.0
 scipy>=1.12.0

@@ -37,8 +37,8 @@ Inicia um container PostgreSQL com uma configuração específica. Esta é a fun
 **Retorna:** Objeto `Container` do Docker SDK Python.
 
 **Lança:**
-- `InvalidConfigError` — se a configuração PostgreSQL contiver parâmetros inválidos (detectados antes de iniciar ou pelo `pg_isready`/logs do container)
-- `RuntimeError` — se o container não ficar pronto dentro de `max_wait_s`
+- `InvalidConfigError`: se a configuração PostgreSQL contiver parâmetros inválidos (detectados antes de iniciar ou pelo `pg_isready`/logs do container)
+- `RuntimeError`: se o container não ficar pronto dentro de `max_wait_s`
 
 **Exemplo de uso:**
 
@@ -95,7 +95,7 @@ Exceção lançada quando o PostgreSQL rejeita a configuração fornecida. Isso 
 2. Uma combinação de parâmetros é semanticamente inválida (ex: `min_wal_size > max_wal_size`)
 3. Um parâmetro não existe na versão do PostgreSQL instalada na imagem
 
-Quando esta exceção é lançada, o runner a captura e chama `queue.mark_abandoned()` — sem retry, pois a config é intrinsecamente inválida.
+Quando esta exceção é lançada, o runner a captura e chama `queue.mark_abandoned()`: sem retry, pois a config é intrinsecamente inválida.
 
 ## Funções internas
 

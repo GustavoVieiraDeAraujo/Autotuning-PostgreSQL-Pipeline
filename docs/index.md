@@ -1,4 +1,4 @@
-# TCC — Auto-Tuning PostgreSQL
+# TCC: Auto-Tuning PostgreSQL
 
 Bem-vindo à documentação do projeto de Trabalho de Conclusão de Curso sobre **ajuste automático de configurações PostgreSQL** em ambientes Docker usando benchmarks analíticos TPC-H e TPC-DS.
 
@@ -106,12 +106,12 @@ O projeto gera **7 combinações** de estágios de parâmetros para estudo de ab
 
 ## Como Navegar
 
-- [**Arquitetura**](arquitetura.md) — Como todos os módulos se conectam
-- [**Executando o Projeto**](execucao.md) — Passo a passo completo
-- [**Benchmarks**](benchmarks/index.md) — TPC-H, TPC-DS, containers e imagens
-- [**Geração de Configurações**](geracao/index.md) — LHS, estágios, espaços de parâmetros
-- [**Fila de Execução**](fila/index.md) — ExecutionQueue, estados e retentativas
-- [**Monitoramento**](monitoramento.md) — MetricsCollector, hardware metrics
-- [**Formato dos Resultados**](resultado.md) — Estrutura completa do JSON de resultados
-- [**Pipeline ML**](ml_pipeline_reference.md) — Referência para o módulo de ML
-- [**API Reference**](api/pg_sampler.md) — Documentação de cada módulo
+- [**Arquitetura**](arquitetura.md): Como todos os módulos se conectam
+- [**Executando o Projeto**](execucao.md): Passo a passo completo
+- [**Benchmarks**](benchmarks/index.md): TPC-H, TPC-DS, containers e imagens
+- [**Geração de Configurações**](geracao/index.md): LHS, estágios, espaços de parâmetros
+- [**Fila de Execução**](fila/index.md): ExecutionQueue, estados e retentativas
+- [**Monitoramento**](monitoramento.md): MetricsCollector, hardware metrics
+- [**Formato dos Resultados**](resultado.md): Estrutura completa do JSON de resultados
+- [**Pipeline ML**](ml_pipeline_reference.md): Referência para o módulo de ML
+- [**API Reference**](api/pg_sampler.md): Documentação de cada módulo

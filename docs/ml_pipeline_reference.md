@@ -1,6 +1,6 @@
-# Referência: Pipeline ML — PostgreSQL Autotuning
+# Referência: Pipeline ML: PostgreSQL Autotuning
 
-> **Última atualização:** 2026-05-10 — resultados reais da Rodada 1 incorporados,
+> **Última atualização:** 2026-05-10: resultados reais da Rodada 1 incorporados,
 > LightGBM substituído por XGBRanker, Optuna executado, Rodada 2 em andamento.
 > Use como referência definitiva ao retomar o desenvolvimento do módulo `ml/`.
 
@@ -12,14 +12,14 @@
 specs/spaces/ (JSON)
       │
       ▼
-pg_sampler/ — LHS sobre N dimensões → configs → output/queue.json
+pg_sampler/: LHS sobre N dimensões → configs → output/queue.json
       │
       ▼
-cli/prepare.py — 6 imagens Docker (tpch/tpcds × low/medium/high)
+cli/prepare.py: 6 imagens Docker (tpch/tpcds × low/medium/high)
       │
       ▼
 cli/run.py → output/benchmark_results/{tier}/{combo}/task_N.json
-      │         ⚠ output/ é SOMENTE LEITURA — nunca editar manualmente
+      │         ⚠ output/ é SOMENTE LEITURA: nunca editar manualmente
       │
       ▼
 ml/extract_features.py → output/features.csv
@@ -53,64 +53,64 @@ ml/extract_features.py → output/features.csv
 | S1+S2 | 25 | 795 | 0.933 |
 | S1+S2+S3 | 33 | 733 | **0.962** |
 
-Tendência clara e monótona — mais parâmetros → modelo melhor, com retorno
+Tendência clara e monótona: mais parâmetros → modelo melhor, com retorno
 decrescente. Resultado defensável na banca.
 
 ---
 
 ## 3. Parâmetros por estágio
 
-### Stage 1 — Memória, paralelismo básico, toggles (13 params)
+### Stage 1: Memória, paralelismo básico, toggles (13 params)
 
 | Parâmetro | Tipo | Impacto OLAP |
 |---|---|---|
-| `jit` | bool | Alto — on/off de compilação JIT |
-| `random_page_cost` | float [1.0, 4.0] | Alto — index vs seqscan |
-| `default_statistics_target` | int [100, 400] | Médio — qualidade de estimativas |
-| `max_parallel_workers` | int [1, vcpus] | Alto — teto de workers |
-| `max_parallel_workers_per_gather` | int [1, vcpus//2] | Alto — workers por Gather |
-| `shared_buffers` | memory | **Alto** — SHAP #3 (11.7%) |
-| `effective_cache_size` | memory | Médio — hint do planner |
-| `work_mem` | memory | **Muito alto** — governa hash joins e sorts |
+| `jit` | bool | Alto: on/off de compilação JIT |
+| `random_page_cost` | float [1.0, 4.0] | Alto: index vs seqscan |
+| `default_statistics_target` | int [100, 400] | Médio: qualidade de estimativas |
+| `max_parallel_workers` | int [1, vcpus] | Alto: teto de workers |
+| `max_parallel_workers_per_gather` | int [1, vcpus//2] | Alto: workers por Gather |
+| `shared_buffers` | memory | **Alto**: SHAP #3 (11.7%) |
+| `effective_cache_size` | memory | Médio: hint do planner |
+| `work_mem` | memory | **Muito alto**: governa hash joins e sorts |
 | `enable_hashagg` | bool | Alto |
 | `enable_bitmapscan` | bool | Médio |
 | `enable_nestloop` | bool | Alto |
 | `enable_parallel_hash` | bool | Alto |
-| `enable_sort` | bool | **Alto** — SHAP #5 (6.6%) |
+| `enable_sort` | bool | **Alto**: SHAP #5 (6.6%) |
 
 **Fixos (não amostrados, excluídos do vetor X):**
-- `seq_page_cost = 1.0` — âncora do planner
-- `max_worker_processes = cpu×2+4` — derivado do hardware
-- `synchronous_commit = "off"` — SELECT-only, sem efeito
+- `seq_page_cost = 1.0`: âncora do planner
+- `max_worker_processes = cpu×2+4`: derivado do hardware
+- `synchronous_commit = "off"`: SELECT-only, sem efeito
 
 ---
 
-### Stage 2 — Custos de CPU, paralelismo fino, join planning (12 params)
+### Stage 2: Custos de CPU, paralelismo fino, join planning (12 params)
 
 | Parâmetro | Tipo | Impacto OLAP |
 |---|---|---|
 | `cpu_tuple_cost` | float | Baixo |
 | `cpu_index_tuple_cost` | float | Baixo |
 | `cpu_operator_cost` | float | Baixo |
-| `parallel_setup_cost` | float | Alto — overhead de setup |
+| `parallel_setup_cost` | float | Alto: overhead de setup |
 | `parallel_tuple_cost` | float | Médio |
-| `min_parallel_table_scan_size` | memory | Alto — threshold seqscan paralelo |
+| `min_parallel_table_scan_size` | memory | Alto: threshold seqscan paralelo |
 | `min_parallel_index_scan_size` | memory | Médio |
 | `join_collapse_limit` | int [4, 16] | Médio |
 | `from_collapse_limit` | int [4, 16] | Médio |
-| `hash_mem_multiplier` | float [1.0, 4.0] | **Muito alto** — multiplica work_mem |
+| `hash_mem_multiplier` | float [1.0, 4.0] | **Muito alto**: multiplica work_mem |
 | `enable_mergejoin` | bool | Alto |
-| `enable_hashjoin` | bool | **Muito alto** — SHAP #2 (12.2%) |
+| `enable_hashjoin` | bool | **Muito alto**: SHAP #2 (12.2%) |
 
 ---
 
-### Stage 3 — Toggles avançados do planner (8 params)
+### Stage 3: Toggles avançados do planner (8 params)
 
 Parâmetros removidos do Stage 3 original (decisão de engenharia #4 e #5):
-- ~~`checkpoint_completion_target`~~ — correlação ~0 com targets (SELECT-only)
-- ~~`bgwriter_lru_maxpages`~~ — idem
-- ~~`wal_buffers`~~ — idem
-- ~~`enable_windowagg`~~ — não existe no PostgreSQL 17
+- ~~`checkpoint_completion_target`~~: correlação ~0 com targets (SELECT-only)
+- ~~`bgwriter_lru_maxpages`~~: idem
+- ~~`wal_buffers`~~: idem
+- ~~`enable_windowagg`~~: não existe no PostgreSQL 17
 
 | Parâmetro | Tipo | Impacto OLAP |
 |---|---|---|
@@ -121,7 +121,7 @@ Parâmetros removidos do Stage 3 original (decisão de engenharia #4 e #5):
 | `enable_indexscan` | bool | Médio |
 | `enable_indexonlyscan` | bool | Médio |
 | `enable_parallel_append` | bool | Médio |
-| `parallel_leader_participation` | bool | **Médio** — SHAP #6 (4.9%) |
+| `parallel_leader_participation` | bool | **Médio**: SHAP #6 (4.9%) |
 
 ---
 
@@ -134,24 +134,24 @@ Parâmetros removidos do Stage 3 original (decisão de engenharia #4 e #5):
 | high | 6 | 5 GB | SF=4 | 1536 MB |
 
 **Encoding:** `vcpus`, `memory_mb`, `sf` como features numéricas contínuas
-(não one-hot). Importância SHAP: HW=41% do sinal total — `vcpus` é a feature
+(não one-hot). Importância SHAP: HW=41% do sinal total: `vcpus` é a feature
 mais importante de todas (39.7% isolada).
 
 ---
 
-## 5. Queries — benchmarks ativos
+## 5. Queries: benchmarks ativos
 
-**TPC-H:** 20 queries ativas (Q17 e Q20 excluídas permanentemente — sempre
+**TPC-H:** 20 queries ativas (Q17 e Q20 excluídas permanentemente: sempre
 timeout em qualquer configuração, adicionariam 45min de ruído por task).
 
-**TPC-DS:** 98 queries ativas (Q95 excluída — mesmo motivo).
+**TPC-DS:** 98 queries ativas (Q95 excluída: mesmo motivo).
 
 **Timeout por query:** 15 minutos (`statement_timeout`).
 **Imputação:** timeout → 900 000 ms · OOM → 1 350 000 ms (1.5×).
 
 ---
 
-## 6. Targets — o que o modelo aprende
+## 6. Targets: o que o modelo aprende
 
 ### Targets ativos (com sinal real)
 
@@ -170,9 +170,9 @@ análise SHAP e uso futuro.
 
 | Target | Motivo |
 |---|---|
-| `avg_workers_launched` | Sempre 0.0 — `plan=null` em 336/336 tasks, paralelismo não capturado |
-| `queries_with_parallelism` | Sempre 0 — mesma causa |
-| `rapl_energy_total_j` | Sempre NaN — Intel RAPL inacessível sem root |
+| `avg_workers_launched` | Sempre 0.0: `plan=null` em 336/336 tasks, paralelismo não capturado |
+| `queries_with_parallelism` | Sempre 0: mesma causa |
+| `rapl_energy_total_j` | Sempre NaN: Intel RAPL inacessível sem root |
 
 ### Nota sobre spill (mudança de design)
 
@@ -180,7 +180,7 @@ O design original previa `XGBClassifier` com target `queries_with_spill > 0`.
 Nos dados coletados, **100% das tasks têm spill** (min=4, max=89 queries no
 TPC-DS). Sem classe negativa, o classificador aprende apenas o prior.
 
-**Solução:** `XGBRegressor` com `log1p(queries_with_spill_tpcds)` — aprende
+**Solução:** `XGBRegressor` com `log1p(queries_with_spill_tpcds)`: aprende
 *quanto* de pressão de memória, não *se* há pressão. Spill TPC-DS tem CV=0.64
 e range 4–89, sinal suficiente para regressão.
 
@@ -188,20 +188,20 @@ e range 4–89, sinal suficiente para regressão.
 
 ## 7. Arquitetura dos modelos
 
-### Nível 1 — Especialistas XGBoost (4 modelos)
+### Nível 1: Especialistas XGBoost (4 modelos)
 
 Treinados com `KFold(5, shuffle=True, seed=42)`. OOF predictions salvas em
 `output/models/oof_predictions.csv`. Formato de arquivo: `.ubj` (binário XGBoost).
 
 ```python
-# ml/config.py — hiperparâmetros base (pós-Optuna 2026-05-10)
+# ml/config.py: hiperparâmetros base (pós-Optuna 2026-05-10)
 XGB_PARAMS = dict(
     n_estimators=400, max_depth=4, learning_rate=0.04,
     subsample=0.8, colsample_bytree=0.8, min_child_weight=5,
     reg_lambda=2.0, tree_method="hist", random_state=42,
 )
 # Parâmetros otimizados por modelo salvos em output/models/best_params.json
-# (Optuna 80 trials — melhora marginal; baseline já estava próximo do ótimo)
+# (Optuna 80 trials: melhora marginal; baseline já estava próximo do ótimo)
 ```
 
 **Resultados por rodada (KFold-5 OOF):**
@@ -215,12 +215,12 @@ XGB_PARAMS = dict(
 
 **Nota sobre RMSE:** o RMSE do M1 subiu de 733ms (Rodada 1) para 13.324ms (672 tasks) devido a 7 configs catastroficamente ruins amostradas pelo LHS na Rodada 2 (geo_mean > 11.5s). Sem esses outliers, RMSE = 636ms. Decisão: manter os outliers (ver decisão de engenharia #24). Para avaliação, usar ρ como métrica principal.
 
-### Nível 2 — Ranker XGBoost
+### Nível 2: Ranker XGBoost
 
 ```python
-# XGBRanker(objective="rank:ndcg") — substituiu LightGBM em 2026-05-10
+# XGBRanker(objective="rank:ndcg"): substituiu LightGBM em 2026-05-10
 # Motivo: LightGBM exige libgomp.so.1 (não disponível no ambiente)
-# Grupos: (tier, combination) — ~16 configs por grupo
+# Grupos: (tier, combination): ~16 configs por grupo
 # Relevância: score composto quantizado 0–9
 ```
 
@@ -233,7 +233,7 @@ XGB_PARAMS = dict(
 ### Score composto (sem meta-modelo Ridge)
 
 O Ridge de stacking foi testado e descartado: ρ=0.383 contra ρ=0.653 do score direto.
-O problema: o score é relativo ao grupo — predições absolutas dos especialistas não
+O problema: o score é relativo ao grupo: predições absolutas dos especialistas não
 correlacionam com o rank sem normalização dentro do grupo.
 
 **Score aplicado diretamente nas predições:**
@@ -243,7 +243,7 @@ score = (
     0.65 × rank_norm(1 / ŷ_geo_mean_tpch) +   # minimizar latência TPC-H
     0.35 × rank_norm(ŷ_cache_hit_tpch)          # maximizar cache hit
 )
-# Pesos otimizados via grid search — 0.65/0.35 confirmado como ótimo
+# Pesos otimizados via grid search: 0.65/0.35 confirmado como ótimo
 # Resultado: ρ=0.653 global (vs 0.383 do Ridge)
 ```
 
@@ -271,11 +271,11 @@ da Rodada 1. Resultado:
 | random_page_cost | 3.93 | 2.51 | 3.14 |
 
 **Análise de sanidade (faz sentido técnico?):**
-- `shared_buffers` cresce com o hardware ✅ — cache principal, mais RAM = melhor
-- `work_mem` = 32 MB nos três ✅ — workloads paralelos: valor alto desperdiça RAM total
-- `jit = OFF` nos três ✅ — TPC-H/TPC-DS têm queries médias; JIT tem overhead de compilação
-- Paralelismo cresce com vCPUs ✅ — lógico
-- `random_page_cost ~3` ✅ — NVMe é mais rápido que HDD (default=4), mas tem latência real
+- `shared_buffers` cresce com o hardware ✅: cache principal, mais RAM = melhor
+- `work_mem` = 32 MB nos três ✅: workloads paralelos: valor alto desperdiça RAM total
+- `jit = OFF` nos três ✅: TPC-H/TPC-DS têm queries médias; JIT tem overhead de compilação
+- Paralelismo cresce com vCPUs ✅: lógico
+- `random_page_cost ~3` ✅: NVMe é mais rápido que HDD (default=4), mas tem latência real
 
 **Diferença best vs worst por tier (sinal real do modelo):**
 
@@ -288,7 +288,7 @@ da Rodada 1. Resultado:
 A diferença de até 2.6× entre a melhor e pior configuração valida que a escolha
 de parâmetros PostgreSQL tem impacto real e mensurável, justificando o projeto.
 
-### Qualidade de ranking — comparação entre rodadas
+### Qualidade de ranking: comparação entre rodadas
 
 | Métrica | Rodada 1 (335 tasks) | Rodadas 1+2 (672 tasks) |
 |---|---|---|
@@ -298,13 +298,13 @@ de parâmetros PostgreSQL tem impacto real e mensurável, justificando o projeto
 | Score global ρ | 0.653 | **0.743** |
 | Ranker ρ | 0.761 | 0.765 |
 
-**Nota sobre top-3:** a queda de 62% → 52% não indica piora — é consequência de grupos maiores (critério mais exigente). O ρ global subiu +9%, mostrando melhora real. Ver decisão de engenharia #26 para explicação completa e como reportar no TCC.
+**Nota sobre top-3:** a queda de 62% → 52% não indica piora: é consequência de grupos maiores (critério mais exigente). O ρ global subiu +9%, mostrando melhora real. Ver decisão de engenharia #26 para explicação completa e como reportar no TCC.
 
 **Limitação estrutural do top-K:** top-K accuracy não é invariante ao tamanho do grupo. Com mais dados, o critério fica automaticamente mais exigente. A métrica correta para avaliar o modelo é ρ Spearman, que é scale-invariante.
 
 ---
 
-## 8. Módulo ml/ — estado atual
+## 8. Módulo ml/: estado atual
 
 ```
 ml/
@@ -312,7 +312,7 @@ ml/
 ├── extract_features.py ✅ lê JSONs → features.csv (inclui geo_mean e spill)
 ├── train.py            ✅ treina M1–M4 + ranker · salva output/models/
 ├── evaluate.py         ✅ ablação · SHAP · qualidade de ranking
-├── tune.py             ✅ Optuna — busca hiperparâmetros XGBoost (80 trials)
+├── tune.py             ✅ Optuna: busca hiperparâmetros XGBoost (80 trials)
 ├── recommend.py        ✅ top-K configs dado tier + combo + candidatos
 └── poc.py              ✅ script de prova de conceito (resultados arquivados)
 ```
@@ -358,7 +358,7 @@ numpy · pandas · scikit-learn · xgboost · shap · optuna    ✅ instalados n
 
 ---
 
-## 9. SHAP — importância de features (resultado real Rodada 1)
+## 9. SHAP: importância de features (resultado real Rodada 1)
 
 Calculado com `shap.TreeExplainer` sobre o modelo M1 (geo_mean_tpch) treinado
 com todos os 335 dados. Salvo em `output/models/shap_importance.json`.
@@ -384,16 +384,16 @@ com todos os 335 dados. Salvo em `output/models/shap_importance.json`.
 **Por stage:** HW=**39.4%** · S1=**32.9%** · S2=**17.6%** · S3=**8.5%**
 
 **Descobertas relevantes para o TCC:**
-- Hardware (vcpus) é o fator mais impactante — 31.6% isolado. Valida a decisão de separar por tier.
-- `enable_hashjoin` (9.7%) supera `shared_buffers` (9.3%) — inesperado: um toggle booleano impacta mais que o principal parâmetro de memória do PostgreSQL. Isso ocorre porque TPC-H/TPC-DS são workloads com muitos joins e hash join é o algoritmo preferido para grandes volumes.
-- `work_mem` (0.6%) e `jit` (0.6%) têm impacto baixo — não foram removidos para manter compatibilidade entre rodadas (ver decisão de engenharia #19).
-- S3 contribui com 8.5% — não é ruído, tem sinal real. `parallel_leader_participation` em #6 é a descoberta mais surpreendente.
+- Hardware (vcpus) é o fator mais impactante: 31.6% isolado. Valida a decisão de separar por tier.
+- `enable_hashjoin` (9.7%) supera `shared_buffers` (9.3%): inesperado: um toggle booleano impacta mais que o principal parâmetro de memória do PostgreSQL. Isso ocorre porque TPC-H/TPC-DS são workloads com muitos joins e hash join é o algoritmo preferido para grandes volumes.
+- `work_mem` (0.6%) e `jit` (0.6%) têm impacto baixo: não foram removidos para manter compatibilidade entre rodadas (ver decisão de engenharia #19).
+- S3 contribui com 8.5%: não é ruído, tem sinal real. `parallel_leader_participation` em #6 é a descoberta mais surpreendente.
 
 ---
 
 ## 10. Histórico de rodadas de coleta
 
-### Rodada 1 — concluída
+### Rodada 1: concluída
 
 | Item | Valor |
 |---|---|
@@ -407,7 +407,7 @@ com todos os 335 dados. Salvo em `output/models/shap_importance.json`.
 | Backup | `/home/araujo/Results/output_backup_2204202610052026/` |
 | Resultados em | `output/benchmark_results/` (IDs 0–335) |
 
-### Rodada 2 — concluída
+### Rodada 2: concluída
 
 | Item | Valor |
 |---|---|
@@ -457,9 +457,9 @@ Terceira rodada descartada. Ver decisão de engenharia #25 para justificativa co
 | Atualizar seção 7 e 9 deste doc | Números definitivos para o TCC |
 
 **Não fazer (decisões irreversíveis documentadas):**
-- Alterar os 33 parâmetros amostrados — invalida combinação de rodadas (ver decisão #19)
-- Alterar schema dos JSONs em output/ — arquivo histórico, somente leitura
-- Ridge de stacking — testado, ρ=0.383 vs 0.653 do score direto
+- Alterar os 33 parâmetros amostrados: invalida combinação de rodadas (ver decisão #19)
+- Alterar schema dos JSONs em output/: arquivo histórico, somente leitura
+- Ridge de stacking: testado, ρ=0.383 vs 0.653 do score direto
 
 ---
 

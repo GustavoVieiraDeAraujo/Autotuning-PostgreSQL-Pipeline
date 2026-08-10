@@ -1,8 +1,13 @@
 # Autotuning PostgreSQL: Pipeline
 
-> **Status: TCC concluído metodologicamente (resultados finais fechados em
-> 2026-05-30), projeto arquivado.** O autor está migrando para um novo tema
-> de TCC (pré-aquecimento preditivo de infraestrutura de dado serverless em
+> **Status: projeto interrompido, arquivado (resultados finais fechados em
+> 2026-05-30).** Foi concebido para ser o tema do TCC do autor, mas não
+> chegou a ser de fato usado como TCC: faltou concluir a etapa de validação
+> das recomendações em instâncias de nuvem real (os 3 tiers avaliados aqui
+> são containers Docker rodando na mesma máquina física, não nuvem de
+> verdade, ver [Limitações](#limitações)), etapa que esbarrou numa barreira
+> financeira de custo de infraestrutura. O autor migrou para um novo tema de
+> TCC (pré-aquecimento preditivo de infraestrutura de dado serverless em
 > pipelines de treino de ML). Este repositório e seus 2 irmãos ficam mantidos
 > como referência funcional e ponto de partida de ideias (ver seção
 > "Investigação final" abaixo).
@@ -100,25 +105,7 @@ elo entre os dois é sempre um banco Postgres de controle (não um arquivo
 local), o que permite múltiplos workers `cli/run.py`, inclusive em máquinas
 diferentes, disputando a mesma fila com segurança.
 
-```mermaid
-flowchart TD
-    subgraph Coleta["1. Coleta de dados (Docker + Postgres de controle)"]
-        A["sampler (LHS)<br/>33 parâmetros, 3 stages<br/>7 combinações × 3 tiers"] -->|"INSERT INTO tasks<br/>(status=pending)"| B[("taskqueue<br/>Postgres de controle<br/>tabela tasks")]
-        B -->|"SELECT ... FOR UPDATE<br/>SKIP LOCKED<br/>(claim atômico)"| C["runner / task_executor<br/>worker cli/run.py"]
-        C -->|"sobe container efêmero"| D["Container Docker isolado<br/>PostgreSQL 17 + dados<br/>TPC-H (20q) + TPC-DS (98q)"]
-        D -->|"resultado por query"| E["result_writer<br/>grava incrementalmente"]
-        E -->|"UPDATE task_results<br/>UPDATE tasks SET status=done"| B
-        D -.->|"container destruído<br/>ao final (sucesso ou falha)"| C
-    end
-
-    subgraph Aprendizado["2. Pipeline de ML (offline, a partir dos dados coletados)"]
-        E --> F["extract_features.py<br/>varre task_results"]
-        F -->|"features.csv<br/>1 linha por task"| G["train.py<br/>4 especialistas XGBoost<br/>+ XGBRanker"]
-        G -->|"modelos .ubj +<br/>oof_predictions.csv"| H["evaluate.py<br/>RMSE, ρ, SHAP, ablação"]
-        G --> I["recommend.py<br/>prediz score composto<br/>para candidatas novas"]
-        I -->|"top-K configs<br/>ranqueadas"| J["Recomendação final"]
-    end
-```
+![Arquitetura de ponta a ponta: coleta de benchmark e pipeline de ML](docs/architecture.svg)
 
 **Como ler o diagrama**: a metade de cima roda em loop, tarefa após tarefa,
 até a fila esvaziar: é a parte cara (pode levar dias). A metade de baixo

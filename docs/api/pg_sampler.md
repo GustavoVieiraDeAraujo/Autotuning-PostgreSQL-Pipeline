@@ -1,8 +1,8 @@
-# API Reference — `pg_sampler/`
+# API Reference: `pg_sampler/`
 
 Referência completa de todas as funções e tipos do pacote `pg_sampler`.
 
-## `pg_sampler/__init__.py` — API Pública
+## `pg_sampler/__init__.py`: API Pública
 
 O `__init__.py` exporta as funções e tipos principais para uso externo:
 
@@ -103,7 +103,7 @@ stages_description([1, 2, 3])  # → "Stage 1 + Stage 2 + Stage 3"
 
 ---
 
-## `pg_sampler/types.py` — Tipos
+## `pg_sampler/types.py`: Tipos
 
 ```python
 from pg_sampler.types import ParameterSpace, Config, Environment, StageSpaces, Stages
@@ -121,7 +121,7 @@ from pg_sampler.types import ParameterSpace, Config, Environment, StageSpaces, S
 
 ---
 
-## `pg_sampler/space_loader.py` — Carregamento de Espaços
+## `pg_sampler/space_loader.py`: Carregamento de Espaços
 
 ### `load_parameter_space`
 
@@ -176,7 +176,7 @@ Salva o dicionário `{tier: [Config]}` em JSON. Cria diretórios intermediários
 
 ---
 
-## `pg_sampler/lhs_sampler.py` — Latin Hypercube Sampling
+## `pg_sampler/lhs_sampler.py`: Latin Hypercube Sampling
 
 ### `lhs_quantiles`
 
@@ -254,7 +254,7 @@ Filtra strings de delay (ex: `["50ms", "100ms", "200ms"]`) por range em milisseg
 
 ---
 
-## `pg_sampler/parameter_builder.py` — Construção de Configurações
+## `pg_sampler/parameter_builder.py`: Construção de Configurações
 
 ### `generate_combined_config`
 
@@ -287,8 +287,8 @@ def generate_valid_configs(
 Gera `n` configurações válidas e únicas via LHS + fallback.
 
 **Algoritmo:**
-1. `diagnose_combined(stage_spaces, stages)` — falha rápido se o espaço é incoerente
-2. `lhs_quantiles(n, stages, seed)` — gera quantis
+1. `diagnose_combined(stage_spaces, stages)`: falha rápido se o espaço é incoerente
+2. `lhs_quantiles(n, stages, seed)`: gera quantis
 3. Para cada slot: tenta com quantil LHS, depois aleatório até `max_attempts`
 4. Garante unicidade (sem configs idênticas)
 
@@ -304,20 +304,20 @@ def _fill_stage1(config: Config, ps: dict, env: Environment, q: dict) -> None
 
 Preenche os parâmetros do Stage 1 em `config`. Ordem de preenchimento (com dependências):
 
-1. `jit` — `_pick([0, 1], q)`
+1. `jit`: `_pick([0, 1], q)`
 2. `seq_page_cost` = `1.0` (fixo)
-3. `random_page_cost` — `_uniform(1.0, 4.0, q)`, cap em 4.0
-4. `default_statistics_target` — `_randint(100, 400, q)`
-5. `max_parallel_workers` — `_randint(1, cpu, q)`, cap em vCPUs
-6. `max_parallel_workers_per_gather` — `_randint(1, min(mpw, cpu//2), q)`
+3. `random_page_cost`: `_uniform(1.0, 4.0, q)`, cap em 4.0
+4. `default_statistics_target`: `_randint(100, 400, q)`
+5. `max_parallel_workers`: `_randint(1, cpu, q)`, cap em vCPUs
+6. `max_parallel_workers_per_gather`: `_randint(1, min(mpw, cpu//2), q)`
 7. `max_worker_processes` = `cpu × 2 + 4` (fixo)
-8. `shared_buffers` — `_pick(filtered_choices, q)`, filtrado por RAM e shm
-9. `effective_cache_size` — `_pick(filtered_choices, q)`, filtrado para `> shared_buffers`
-10. `work_mem` — `_pick(filtered_choices, q)`, filtrado por floor do tier
-11. `enable_hashagg` — `_pick([0, 1], q)`
-12. `enable_bitmapscan` — `_pick([0, 1], q)`
-13. `enable_nestloop` — `_pick([0, 1], q)`
-14. `enable_parallel_hash` — `_pick([0, 1], q)`
+8. `shared_buffers`: `_pick(filtered_choices, q)`, filtrado por RAM e shm
+9. `effective_cache_size`: `_pick(filtered_choices, q)`, filtrado para `> shared_buffers`
+10. `work_mem`: `_pick(filtered_choices, q)`, filtrado por floor do tier
+11. `enable_hashagg`: `_pick([0, 1], q)`
+12. `enable_bitmapscan`: `_pick([0, 1], q)`
+13. `enable_nestloop`: `_pick([0, 1], q)`
+14. `enable_parallel_hash`: `_pick([0, 1], q)`
 15. `synchronous_commit` = `"off"` (fixo)
 
 ### `_fill_stage2`
@@ -343,7 +343,7 @@ Preenche os parâmetros do Stage 3. Usa valores do Stage 1 se presentes (`"max_w
 
 ---
 
-## `pg_sampler/constraints.py` — Validação
+## `pg_sampler/constraints.py`: Validação
 
 ### `validate_combined_config`
 
@@ -378,7 +378,7 @@ Ver [Restrições e Validação](../geracao/restricoes.md) para a lista completa
 
 ---
 
-## `pg_sampler/orchestrator.py` — Orquestração
+## `pg_sampler/orchestrator.py`: Orquestração
 
 ### Constantes
 
@@ -401,7 +401,7 @@ Implementações que geram rótulos e descrições para combinações de stages 
 
 ---
 
-## `pg_sampler/display.py` — Exibição
+## `pg_sampler/display.py`: Exibição
 
 Funções de formatação para saída no terminal durante a geração.
 

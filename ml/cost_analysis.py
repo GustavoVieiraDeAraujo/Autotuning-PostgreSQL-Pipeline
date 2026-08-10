@@ -1,7 +1,7 @@
 """
 Análise de custo-efetividade: config padrão vs meta-modelo.
 
-IMPORTANTE — scale factors por tier:
+IMPORTANTE: scale factors por tier:
     low=SF1, medium=SF2, high=SF4
 
 Tempos de execução NÃO são diretamente comparáveis entre tiers
@@ -23,7 +23,7 @@ import numpy as np
 from pathlib import Path
 
 # ──────────────────────────────────────────────────────────────────────────────
-# EC2 on-demand us-east-1 (mai/2026) — compute-optimized (c5)
+# EC2 on-demand us-east-1 (mai/2026): compute-optimized (c5)
 # ──────────────────────────────────────────────────────────────────────────────
 TIER_PRICE = {
     "low":    0.085,   # c5.large  (2 vCPU,  4 GB)
@@ -96,7 +96,7 @@ def print_row(s: dict):
 
 def analysis_within_tier(df: pd.DataFrame, tier: str):
     print(f"\n{'═'*60}")
-    print(f"  ANÁLISE A — Tuning dentro do {tier.upper()} tier (SF={int(df[df['tier']==tier]['sf'].iloc[0])})")
+    print(f"  ANÁLISE A: Tuning dentro do {tier.upper()} tier (SF={int(df[df['tier']==tier]['sf'].iloc[0])})")
     print(f"  Mesma instância, configs diferentes → comparação direta")
     print(f"{'═'*60}")
 
@@ -126,7 +126,7 @@ def analysis_within_tier(df: pd.DataFrame, tier: str):
 
 def analysis_across_tiers(df: pd.DataFrame):
     print(f"\n{'═'*60}")
-    print(f"  ANÁLISE B — Eficiência entre tiers (normalizado por SF)")
+    print(f"  ANÁLISE B: Eficiência entre tiers (normalizado por SF)")
     print(f"  SF diferentes → comparação por 'custo por unidade de dado'")
     print(f"{'═'*60}")
     print(f"  Nota: SF=1→1GB, SF=2→2GB, SF=4→4GB de dados TPC")
@@ -143,7 +143,7 @@ def analysis_across_tiers(df: pd.DataFrame):
         print(f"    Custo/mês  : R$ {s['cost_month_brl']:.2f}")
         print(f"    TPC-H geo  : {s['tpch_s']:.2f}s  TPC-DS geo: {s['tpcds_s']:.2f}s")
 
-    print(f"\n  COMPARAÇÃO (custo/SF — menor é mais eficiente)")
+    print(f"\n  COMPARAÇÃO (custo/SF: menor é mais eficiente)")
     print(f"  {'Tier':<10} {'$/run':>8} {'$/SF':>8} {'R$/mês':>8} {'TPC-H(s)':>10}")
     print(f"  {'─'*52}")
     for s in rows:
@@ -163,7 +163,7 @@ def main():
     df = load_data(Path(args.features))
 
     print("\n" + "═" * 60)
-    print("  CUSTO-EFETIVIDADE — OLAP PostgreSQL em Nuvem")
+    print("  CUSTO-EFETIVIDADE: OLAP PostgreSQL em Nuvem")
     print("═" * 60)
     print(f"  Dataset : {len(df)} execuções | Câmbio: 1 USD = R$ {BRL_PER_USD}")
     print(f"  Preços  : low=${TIER_PRICE['low']}/hr  medium=${TIER_PRICE['medium']}/hr  high=${TIER_PRICE['high']}/hr")

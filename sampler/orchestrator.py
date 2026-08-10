@@ -12,7 +12,7 @@ Funções principais
 
 Funções auxiliares
 ------------------
-    stages_description(stages) — texto legível da combinação
+    stages_description(stages): texto legível da combinação
 """
 
 import time
@@ -77,8 +77,8 @@ def generate_all_tiers(
 
     Returns:
         Tupla de três dicts:
-          - ``valid_results``: ``{tier: [Config]}`` — configs válidas
-          - ``tier_times``:    ``{tier: segundos}`` — tempo de geração
+          - ``valid_results``: ``{tier: [Config]}``: configs válidas
+          - ``tier_times``:    ``{tier: segundos}``: tempo de geração
           - ``report``:        ``{tier: {total, valid, invalid, sample_error}}``
     """
     valid_results: dict[str, list[Config]] = {}

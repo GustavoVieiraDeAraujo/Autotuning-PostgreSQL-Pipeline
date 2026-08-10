@@ -4,21 +4,21 @@ Regras de validação e diagnóstico do espaço de parâmetros combinado.
 Cobre três camadas de restrições para parâmetros relevantes a workloads
 analíticos SELECT-only (TPC-H / TPC-DS):
 
-  1. Intra-Etapa 1 — memória & paralelismo base (13 params):
+  1. Intra-Etapa 1: memória & paralelismo base (13 params):
        jit, random_page_cost, default_statistics_target,
        max_parallel_workers, max_parallel_workers_per_gather,
        shared_buffers, effective_cache_size, work_mem,
        enable_hashagg, enable_bitmapscan, enable_nestloop, enable_parallel_hash,
        enable_sort.
 
-  2. Intra-Etapa 2 — estratégia de join & custos do planner (12 params):
+  2. Intra-Etapa 2: estratégia de join & custos do planner (12 params):
        hash_mem_multiplier, enable_hashjoin, enable_mergejoin,
        parallel_setup_cost, parallel_tuple_cost,
        min_parallel_table_scan_size, min_parallel_index_scan_size,
        join_collapse_limit, from_collapse_limit,
        cpu_tuple_cost, cpu_index_tuple_cost, cpu_operator_cost.
 
-  3. Etapa 3 — apenas toggles booleanos (on/off), sem invariantes numéricos
+  3. Etapa 3: apenas toggles booleanos (on/off), sem invariantes numéricos
        a validar.
 
 Restrição cruzada mantida (única relevante):
@@ -112,7 +112,7 @@ def _effective_min_cache_ratio(ram_mb: int, cache_choices: list[str]) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Validação combinada — ponto de entrada principal
+# Validação combinada: ponto de entrada principal
 # ---------------------------------------------------------------------------
 
 def validate_combined_config(
@@ -145,7 +145,7 @@ def validate_combined_config(
 
 
 # ---------------------------------------------------------------------------
-# Validação intra-Etapa 1 — paralelismo, memória, planner básico
+# Validação intra-Etapa 1: paralelismo, memória, planner básico
 # ---------------------------------------------------------------------------
 
 def _validate_stage1(
@@ -172,7 +172,7 @@ def _validate_stage1(
 
     # Paralelismo
     if per_gather < 1:
-        errors.append("E1: max_parallel_workers_per_gather < 1 — paralelismo desabilitado")
+        errors.append("E1: max_parallel_workers_per_gather < 1: paralelismo desabilitado")
     if per_gather > mpw:
         errors.append("E1: max_parallel_workers_per_gather > max_parallel_workers")
     if mpw > cpu:
@@ -186,7 +186,7 @@ def _validate_stage1(
     ratio = config["random_page_cost"] / config["seq_page_cost"]
     if ratio > _MAX_RAND_SEQ_RATIO:
         errors.append(
-            f"E1: random/seq ratio {ratio:.1f}× > {_MAX_RAND_SEQ_RATIO}× — "
+            f"E1: random/seq ratio {ratio:.1f}× > {_MAX_RAND_SEQ_RATIO}×: "
             f"planner evitará index scans"
         )
 
@@ -230,7 +230,7 @@ def _validate_stage1(
 
 
 # ---------------------------------------------------------------------------
-# Validação intra-Etapa 2 — custos CPU, collapse limits, hash memory
+# Validação intra-Etapa 2: custos CPU, collapse limits, hash memory
 # ---------------------------------------------------------------------------
 
 def _validate_stage2(config: Config, env: Environment) -> list[str]:
@@ -258,7 +258,7 @@ def _validate_stage2(config: Config, env: Environment) -> list[str]:
         )
 
     if hmm < 1.0:
-        errors.append(f"E2: hash_mem_multiplier ({hmm}) < 1.0 — inválido")
+        errors.append(f"E2: hash_mem_multiplier ({hmm}) < 1.0: inválido")
 
     # Com hashjoin e mergejoin desabilitados, o planner usa apenas nested loop.
     # Para workloads OLAP (TPC-H / TPC-DS), nested loop em tabelas grandes é
@@ -269,7 +269,7 @@ def _validate_stage2(config: Config, env: Environment) -> list[str]:
     no_mj = config.get("enable_mergejoin") == "off"
     if no_hj and no_mj:
         errors.append(
-            "E2: enable_hashjoin=off + enable_mergejoin=off — apenas nested loop "
+            "E2: enable_hashjoin=off + enable_mergejoin=off: apenas nested loop "
             "disponível; catastrófico para OLAP (timeout garantido)"
         )
 
@@ -300,11 +300,11 @@ def _validate_cross_12(config: Config, env: Environment) -> list[str]:
         )
 
     # parallel_setup_cost alto com per_gather > 1: o planner escolherá planos seriais
-    # mesmo com workers disponíveis — per_gather torna-se um parâmetro fantasma
+    # mesmo com workers disponíveis: per_gather torna-se um parâmetro fantasma
     if psc > 1200 and per_g > 1:
         errors.append(
             f"Cross E1+E2: parallel_setup_cost ({psc}) > 1200 com "
-            f"per_gather={per_g} — planner evitará planos paralelos"
+            f"per_gather={per_g}: planner evitará planos paralelos"
         )
 
     # Sem nenhum método de join disponível: deadlock de planner
@@ -314,7 +314,7 @@ def _validate_cross_12(config: Config, env: Environment) -> list[str]:
     if no_nl and no_mj and no_hj:
         errors.append(
             "Cross E1+E2: enable_nestloop=off + enable_mergejoin=off + "
-            "enable_hashjoin=off — nenhum método de join disponível"
+            "enable_hashjoin=off: nenhum método de join disponível"
         )
 
     return errors

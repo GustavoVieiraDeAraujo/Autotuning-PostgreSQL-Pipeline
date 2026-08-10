@@ -37,7 +37,7 @@ ROOT = FEATURES_CSV.parent.parent
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# Objetivo Optuna — minimiza RMSE no espaço original via KFold OOF
+# Objetivo Optuna: minimiza RMSE no espaço original via KFold OOF
 # ─────────────────────────────────────────────────────────────────────────
 
 def _make_objective(Xm: pd.DataFrame, ym: pd.Series, transform: str):
@@ -113,7 +113,7 @@ def tune_target(
 
 def run(targets: list[str], n_trials: int = 80) -> dict:
     print("═" * 60)
-    print("  OPTUNA — Otimização de hiperparâmetros XGBoost")
+    print("  OPTUNA: Otimização de hiperparâmetros XGBoost")
     print("═" * 60)
     print(f"  Trials por modelo : {n_trials}")
     print(f"  Modelos           : {targets}")

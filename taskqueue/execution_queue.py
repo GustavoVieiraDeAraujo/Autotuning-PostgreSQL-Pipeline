@@ -2,8 +2,8 @@
 Fila de execução persistente para testes sequenciais de configurações PostgreSQL.
 
 Backend: Postgres (ver db/schema.sql), não mais um arquivo JSON local. Isso
-permite que múltiplos workers `cli/run.py` — potencialmente em máquinas
-diferentes — reivindiquem tarefas da mesma fila com segurança, via
+permite que múltiplos workers `cli/run.py`: potencialmente em máquinas
+diferentes: reivindiquem tarefas da mesma fila com segurança, via
 `SELECT ... FOR UPDATE SKIP LOCKED` em ``next()``.
 
 Estrutura de uma tarefa (dict retornado por next()/pending()/done()/__iter__)
@@ -28,12 +28,12 @@ Ciclo de vida de uma tarefa
                      ↘ abandoned (invalid_config | timeout | max_retries esgotado)
 
 A transição pending→running ocorre atomicamente em ``next()``, via
-``UPDATE ... WHERE id = (SELECT ... FOR UPDATE SKIP LOCKED)`` — dois workers
+``UPDATE ... WHERE id = (SELECT ... FOR UPDATE SKIP LOCKED)``: dois workers
 nunca recebem a mesma tarefa, mesmo concorrendo pela mesma linha.
 
 Recuperação de crash: como não há mais um único processo "dono" da fila que
 recarrega o arquivo ao reiniciar, ``next()`` também reivindica tarefas presas
-em "running" cujo lease (baseado no timeout do próprio tier — ver
+em "running" cujo lease (baseado no timeout do próprio tier: ver
 runner/task_executor.py::_TASK_TIMEOUT_S) já expirou. Um worker que morreu
 sem marcar a tarefa como concluída/abandonada libera a tarefa automaticamente
 depois desse tempo, sem precisar de heartbeat nem de reiniciar nada.
@@ -58,7 +58,7 @@ _ABANDONED = "abandoned"
 
 _ALL_STATUSES = (_PENDING, _RUNNING, _DONE, _FAILED, _ABANDONED)
 
-# Colunas retornadas por tarefa — "result_summary" é exposto como "result"
+# Colunas retornadas por tarefa: "result_summary" é exposto como "result"
 # para manter o mesmo formato de dict usado no resto do projeto.
 _TASK_COLUMNS = """
     id, combination, tier, config, repetition, status, retry_count,
@@ -69,7 +69,7 @@ _TASK_COLUMNS = """
 # Lease de reivindicação por tier: quanto tempo uma tarefa "running" pode
 # ficar sem lock antes de ser considerada abandonada por um worker morto e
 # devolvida à fila. Espelha runner/task_executor.py::_TASK_TIMEOUT_S mais
-# uma margem de segurança — uma tarefa legítima sempre termina (ou levanta
+# uma margem de segurança: uma tarefa legítima sempre termina (ou levanta
 # TaskTimeoutError) bem antes desse prazo.
 _LEASE_SQL_CASE = """
     CASE tier
@@ -93,7 +93,7 @@ class ExecutionQueue:
         self._dsn = dsn or get_dsn()
 
     # ------------------------------------------------------------------
-    # Fábrica — constrói a fila a partir dos resultados gerados
+    # Fábrica: constrói a fila a partir dos resultados gerados
     # ------------------------------------------------------------------
 
     @classmethod
@@ -111,7 +111,7 @@ class ExecutionQueue:
         intenção for começar uma fila nova.
 
         Args:
-            all_results: Dict ``{label: {tier: [Config]}}`` — saída direta
+            all_results: Dict ``{label: {tier: [Config]}}``: saída direta
                          de ``generate_configs()``.
             dsn:         Connection string do banco de controle.
             repetitions: Número de vezes que cada config é enfileirada.
@@ -152,7 +152,7 @@ class ExecutionQueue:
 
         Args:
             worker_id: Identificador opcional do worker (host:pid, por
-                       exemplo) — gravado em ``claimed_by`` para diagnóstico.
+                       exemplo): gravado em ``claimed_by`` para diagnóstico.
 
         Returns:
             Dict da tarefa, ou None se não houver nenhuma disponível.
@@ -206,7 +206,7 @@ class ExecutionQueue:
     def requeue_with_retry(self, task_id: int, error: str) -> None:
         """Recoloca uma tarefa na fila incrementando seu contador de tentativas.
 
-        Vai direto para "pending" — mesmo fluxo que no backend em arquivo.
+        Vai direto para "pending": mesmo fluxo que no backend em arquivo.
 
         Args:
             task_id: ID da tarefa que falhou.
@@ -272,7 +272,7 @@ class ExecutionQueue:
         return row["empty"]
 
     def reset(self) -> None:
-        """Apaga todas as tarefas e resultados — começa a fila do zero.
+        """Apaga todas as tarefas e resultados: começa a fila do zero.
 
         Substitui o antigo ``queue_path.unlink()``. Reinicia a contagem de
         IDs (``RESTART IDENTITY``); ``CASCADE`` também limpa ``task_results``.

@@ -5,11 +5,11 @@ Execução dos benchmarks TPC-H e TPC-DS em containers PostgreSQL isolados.
 
 Submódulos
 ----------
-    tpc_h/          — 20 queries TPC-H ativas (SF1/SF2/SF4)
-    tpc_ds/         — 98 queries TPC-DS ativas (SF1/SF2/SF4)
-    container       — ciclo de vida de containers PostgreSQL
-    image_builder   — construção de imagens Docker com dados pré-carregados
-    query_executor  — execução de queries e coleta de métricas (compartilhado)
+    tpc_h/: 20 queries TPC-H ativas (SF1/SF2/SF4)
+    tpc_ds/: 98 queries TPC-DS ativas (SF1/SF2/SF4)
+    container: ciclo de vida de containers PostgreSQL
+    image_builder: construção de imagens Docker com dados pré-carregados
+    query_executor: execução de queries e coleta de métricas (compartilhado)
 
 Uso rápido
 ----------

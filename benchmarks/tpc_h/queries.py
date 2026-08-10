@@ -3,11 +3,11 @@ As 22 queries do benchmark TPC-H com os valores de qualificação padrão
 (substituição fixa conforme especificação TPC-H v2.17).
 
 Cada entrada é um dict com:
-    id       : int  — número da query (1–22)
-    name     : str  — nome descritivo
-    sql      : str  — SQL pronto para executar
-    setup    : str  — DDL executado antes da query (somente Q15)
-    teardown : str  — DDL executado após a query (somente Q15)
+    id       : int - número da query (1–22)
+    name     : str - nome descritivo
+    sql      : str - SQL pronto para executar
+    setup    : str - DDL executado antes da query (somente Q15)
+    teardown : str - DDL executado após a query (somente Q15)
 """
 
 QUERIES: list[dict] = [

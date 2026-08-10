@@ -286,7 +286,7 @@ def auto_prune_if_needed(
         log(
             f"[docker-cleanup] Espaço livre: {free:.1f} GB "
             f"(limiar: {critical_threshold_gb if aggressive else free_threshold_gb:.0f} GB) "
-            f"— iniciando prune {mode}...",
+            f"- iniciando prune {mode}...",
             level="WARN",
         )
 
@@ -297,13 +297,13 @@ def auto_prune_if_needed(
 
     if verbose and reclaimed["total"] > 0:
         log(
-            f"[docker-cleanup] Prune concluído — "
+            f"[docker-cleanup] Prune concluído: "
             f"{gained:.1f} GB liberados | livre agora: {after:.1f} GB",
             level="OK",
         )
     elif verbose:
         log(
-            f"[docker-cleanup] Prune sem efeito — livre: {after:.1f} GB",
+            f"[docker-cleanup] Prune sem efeito: livre: {after:.1f} GB",
             level="DIM",
         )
 

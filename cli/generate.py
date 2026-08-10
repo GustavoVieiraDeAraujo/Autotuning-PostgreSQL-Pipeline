@@ -1,8 +1,8 @@
 """
-Gerador de configurações PostgreSQL — ponto de entrada.
+Gerador de configurações PostgreSQL: ponto de entrada.
 
 Gera todas as 7 combinações de etapas e popula a fila de execução no
-Postgres de controle (ver db/schema.sql — variável de ambiente
+Postgres de controle (ver db/schema.sql: variável de ambiente
 ``DATABASE_URL``, ver utils/db.py).
 
 Uso direto
@@ -123,7 +123,7 @@ def _generate(args: argparse.Namespace) -> None:
     print_summary_table(
         all_results,
         time.perf_counter() - t0,
-        "Postgres (banco de controle — ver DATABASE_URL)",
+        "Postgres (banco de controle: ver DATABASE_URL)",
     )
 
     queue = ExecutionQueue.from_dict(

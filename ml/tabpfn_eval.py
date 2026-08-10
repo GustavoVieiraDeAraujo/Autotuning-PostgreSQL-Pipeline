@@ -8,8 +8,8 @@ salvos em data/models/train_metrics.json.
 
 Testa 2 estratégias de valor ausente (TabICL não roteia NaN nativamente como
 árvore de decisão faz):
-    naive  — substitui por -1.0 (sentinela fora do range real)
-    median — imputação por mediana da coluna + coluna indicadora binária
+    naive: substitui por -1.0 (sentinela fora do range real)
+    median: imputação por mediana da coluna + coluna indicadora binária
              "era ausente" (preserva o sinal que o XGBoost já explora nativo)
 
 Uso:
@@ -74,10 +74,10 @@ def main() -> None:
         yt = apply_transform(y, transform)
 
         xgb = xgb_metrics[target_name]
-        print(f"\n── {target_name} ({col}) — n={len(X)} ──")
+        print(f"\n── {target_name} ({col}): n={len(X)} ──")
         print(f"  {'estratégia':<28} {'RMSE':>12} {'ρ':>8} {'tempo':>8}")
         print(f"  {'─'*58}")
-        print(f"  {'XGBoost (referência)':<28} {xgb['rmse']:>12.2f} {xgb['spearman_rho']:>8.3f} {'—':>8}")
+        print(f"  {'XGBoost (referência)':<28} {xgb['rmse']:>12.2f} {xgb['spearman_rho']:>8.3f} {'N/A':>8}")
 
         for strat_name, fill_fn in STRATEGIES.items():
             X_filled = fill_fn(X)

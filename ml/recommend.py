@@ -7,7 +7,7 @@ de cada config e retorna as top-K ordenadas do melhor para o pior.
 O score composto usa a MESMA fórmula do treino, aplicada às predições:
     score = 0.65 × rank_norm(1/ŷ_geo_tpch) + 0.35 × rank_norm(ŷ_cache_tpch)
 
-O ranking é RELATIVO ao conjunto de candidatos fornecido — quanto mais
+O ranking é RELATIVO ao conjunto de candidatos fornecido: quanto mais
 configs candidatas, mais precisa é a comparação. O mínimo recomendado é
 5 configs para que o rank normalizado tenha resolução suficiente.
 
@@ -255,7 +255,7 @@ def recommend(
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# CLI — demonstração com dados reais do dataset
+# CLI: demonstração com dados reais do dataset
 # ─────────────────────────────────────────────────────────────────────────
 
 def _demo_from_csv(tier: str, combination: str, k: int) -> None:

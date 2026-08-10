@@ -67,7 +67,7 @@ def generate_combined_config(
 
 
 # ---------------------------------------------------------------------------
-# Etapa 1 — memória, paralelismo, toggles de execução básica (13 params LHS + 3 fixos)
+# Etapa 1: memória, paralelismo, toggles de execução básica (13 params LHS + 3 fixos)
 # ---------------------------------------------------------------------------
 
 def _fill_stage1(
@@ -81,25 +81,25 @@ def _fill_stage1(
     ram_mb = env["memory_mb"]
     shm_mb = env.get("shm_size_mb", 64)
 
-    # 1. JIT — desabilitado em LOW (2 vCPU): overhead de compilação supera ganho
+    # 1. JIT: desabilitado em LOW (2 vCPU): overhead de compilação supera ganho
     config["jit"] = _pick(ps["jit"]["choices"]["values"], q.get("jit"))
 
-    # 2. seq_page_cost — fixo em 1.0 (âncora do planner)
+    # 2. seq_page_cost: fixo em 1.0 (âncora do planner)
     config["seq_page_cost"] = 1.0
 
-    # 3. random_page_cost — limitado a 4.0 (irrealista acima disso em SSD overlay2)
+    # 3. random_page_cost: limitado a 4.0 (irrealista acima disso em SSD overlay2)
     rand = ps["random_page_cost"]["choices"]["values"]
     config["random_page_cost"] = round(
         _uniform(rand["min"], min(rand["max"], 4.0), q.get("random_page_cost")), 3
     )
 
-    # 4. default_statistics_target — valores altos melhoram estimativas de join em OLAP
+    # 4. default_statistics_target: valores altos melhoram estimativas de join em OLAP
     stats = ps["default_statistics_target"]["choices"]["values"]
     config["default_statistics_target"] = _randint(
         stats["min"], stats["max"], q.get("default_statistics_target")
     )
 
-    # 5. max_parallel_workers — limitado às vCPUs disponíveis
+    # 5. max_parallel_workers: limitado às vCPUs disponíveis
     workers_spec = ps["max_parallel_workers"]["choices"]["values"]
     max_workers  = min(cpu, workers_spec["max"])
     min_workers  = min(workers_spec["min"], max_workers)
@@ -107,7 +107,7 @@ def _fill_stage1(
         min_workers, max_workers, q.get("max_parallel_workers")
     )
 
-    # 6. max_parallel_workers_per_gather — mínimo 1 (nunca desabilitar paralelismo
+    # 6. max_parallel_workers_per_gather: mínimo 1 (nunca desabilitar paralelismo
     #    por query em OLAP; per_gather=0 é catastrófico para TPC-H/TPC-DS)
     gather_spec = ps["max_parallel_workers_per_gather"]["choices"]["values"]
     max_gather  = min(config["max_parallel_workers"], max(1, cpu // 2), gather_spec["max"])
@@ -117,11 +117,11 @@ def _fill_stage1(
         min_gather, max_gather, q.get("max_parallel_workers_per_gather")
     )
 
-    # 7. max_worker_processes — fixo derivado do CPU; remove dependência cross-param
+    # 7. max_worker_processes: fixo derivado do CPU; remove dependência cross-param
     #    Fórmula: cpu×2 + 4  →  LOW=8, MEDIUM=12, HIGH=16
     config["max_worker_processes"] = cpu * 2 + 4
 
-    # 8. shared_buffers — limitado pelo teto de /dev/shm e pela razão de RAM
+    # 8. shared_buffers: limitado pelo teto de /dev/shm e pela razão de RAM
     shared_choices = ps["shared_buffers"]["choices"]["values"]
     min_r, max_r   = _shared_ratio_bounds()
     min_shared     = int(ram_mb * min_r)
@@ -131,7 +131,7 @@ def _fill_stage1(
         filtered = filter_memory_choices(shared_choices, int(ram_mb * 0.10), shm_mb)
     config["shared_buffers"] = _pick(filtered or shared_choices, q.get("shared_buffers"))
 
-    # 9. effective_cache_size — hint do planner; deve exceder shared_buffers
+    # 9. effective_cache_size: hint do planner; deve exceder shared_buffers
     shared_mb       = parse_memory(config["shared_buffers"])
     cache_choices   = ps["effective_cache_size"]["choices"]["values"]
     min_cache_ratio = _effective_min_cache_ratio(ram_mb, cache_choices)
@@ -143,7 +143,7 @@ def _fill_stage1(
         filtered or cache_choices, q.get("effective_cache_size")
     )
 
-    # 10. work_mem — floor por tier evita spill constante em TPC-H/TPC-DS;
+    # 10. work_mem: floor por tier evita spill constante em TPC-H/TPC-DS;
     #     cap quando paralelismo alto evita OOM.
     work_choices = ps["work_mem"]["choices"]["values"]
     work_min_mb  = 32 if ram_mb >= 6144 else 16 if ram_mb >= 4096 else 8
@@ -155,7 +155,7 @@ def _fill_stage1(
             filtered = capped
     config["work_mem"] = _pick(filtered or work_choices, q.get("work_mem"))
 
-    # 11–13 (toggles). Toggles de execução básica — sem dependências entre si ou com outros params
+    # 11–13 (toggles). Toggles de execução básica: sem dependências entre si ou com outros params
     for key in [
         "enable_hashagg",
         "enable_bitmapscan",
@@ -165,12 +165,12 @@ def _fill_stage1(
     ]:
         config[key] = _pick(ps[key]["choices"]["values"], q.get(key))
 
-    # Parâmetros fixos — irrelevantes para workloads SELECT-only
+    # Parâmetros fixos: irrelevantes para workloads SELECT-only
     config["synchronous_commit"] = "off"
 
 
 # ---------------------------------------------------------------------------
-# Etapa 2 — estratégia de join & custos do planner (12 params LHS)
+# Etapa 2: estratégia de join & custos do planner (12 params LHS)
 # ---------------------------------------------------------------------------
 
 def _fill_stage2(
@@ -181,7 +181,7 @@ def _fill_stage2(
 ) -> None:
     """Preenche os 12 parâmetros LHS da Etapa 2."""
 
-    # 1. cpu_tuple_cost — teto da hierarquia de custos CPU
+    # 1. cpu_tuple_cost: teto da hierarquia de custos CPU
     tup_spec = ps["cpu_tuple_cost"]["choices"]["values"]
     config["cpu_tuple_cost"] = round(
         _uniform(tup_spec["min"], tup_spec["max"], q.get("cpu_tuple_cost")), 4
@@ -225,7 +225,7 @@ def _fill_stage2(
         idx_choices, q.get("min_parallel_index_scan_size")
     )
 
-    # 6. Collapse limits — controlam profundidade da busca exaustiva de ordem de join
+    # 6. Collapse limits: controlam profundidade da busca exaustiva de ordem de join
     jcl_spec = ps["join_collapse_limit"]["choices"]["values"]
     config["join_collapse_limit"] = _randint(
         jcl_spec["min"], jcl_spec["max"], q.get("join_collapse_limit")
@@ -236,7 +236,7 @@ def _fill_stage2(
         fcl_spec["min"], fcl_spec["max"], q.get("from_collapse_limit")
     )
 
-    # 7. Hash memory multiplier — multiplica work_mem para hash joins/aggregations
+    # 7. Hash memory multiplier: multiplica work_mem para hash joins/aggregations
     hmm_spec = ps["hash_mem_multiplier"]["choices"]["values"]
     config["hash_mem_multiplier"] = round(
         _uniform(hmm_spec["min"], hmm_spec["max"], q.get("hash_mem_multiplier")), 1
@@ -252,7 +252,7 @@ def _fill_stage2(
 
 
 # ---------------------------------------------------------------------------
-# Etapa 3 — execução avançada (8 params LHS)
+# Etapa 3: execução avançada (8 params LHS)
 # ---------------------------------------------------------------------------
 
 def _fill_stage3(
@@ -263,7 +263,7 @@ def _fill_stage3(
 ) -> None:
     """Preenche os 8 parâmetros LHS da Etapa 3."""
 
-    # 1–8. Toggles do planner — sem dependências entre si
+    # 1–8. Toggles do planner: sem dependências entre si
     for key in [
         "enable_memoize",          # caching de resultados de inner loop (PG14+)
         "enable_gathermerge",      # gather merge em queries paralelas com ORDER BY
@@ -275,7 +275,7 @@ def _fill_stage3(
     ]:
         config[key] = _pick(ps[key]["choices"]["values"], q.get(key))
 
-    # 9. parallel_leader_participation — líder do gather participa como worker
+    # 9. parallel_leader_participation: líder do gather participa como worker
     config["parallel_leader_participation"] = _pick(
         ps["parallel_leader_participation"]["choices"]["values"],
         q.get("parallel_leader_participation"),

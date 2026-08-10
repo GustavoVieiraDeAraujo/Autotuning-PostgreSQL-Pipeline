@@ -4,7 +4,7 @@ meta-modelo: config de fábrica do PostgreSQL 17 e config recomendada pelo
 pgtune, uma de cada nos 3 tiers (low/medium/high).
 
 Usa `combination` distinto ("baseline_default"/"baseline_pgtune") pra não se
-misturar com as combinações reais (s1, s2, ..., s1_s2_s3) usadas no treino —
+misturar com as combinações reais (s1, s2, ..., s1_s2_s3) usadas no treino: 
 estas tarefas são só pra avaliação/comparação, não entram no features.csv.
 
 Depois de rodar este script:

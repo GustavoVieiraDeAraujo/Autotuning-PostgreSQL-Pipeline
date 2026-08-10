@@ -49,7 +49,7 @@ _TPCDS_TABLES = [
     "warehouse", "household_demographics",
 ]
 
-# Query genérica — só verifica que o PostgreSQL aceita conexões e responde.
+# Query genérica: só verifica que o PostgreSQL aceita conexões e responde.
 # O schema já foi validado nos checks 5 e 6.
 _CONN_TEST_SQL = "SELECT 1;"
 
@@ -81,7 +81,7 @@ def run_preflight_checks(
             client.close()
         log("     OK", level="OK", indent=1)
     except Exception as exc:  # noqa: BLE001
-        log(f"     FALHA — {exc}", level="ERROR", indent=1)
+        log(f"     FALHA: {exc}", level="ERROR", indent=1)
         failures.append("Docker daemon inacessível")
 
     # ── 2. Espaço em disco ────────────────────────────────────────────────
@@ -94,7 +94,7 @@ def run_preflight_checks(
             f"cache={docker_usage['build_cache']:.1f} GB)", indent=1)
 
         if free_gb < _WARN_FREE_GB:
-            log(f"     Espaço abaixo de {_WARN_FREE_GB} GB — executando limpeza Docker...",
+            log(f"     Espaço abaixo de {_WARN_FREE_GB} GB: executando limpeza Docker...",
                 level="WARN", indent=1)
             auto_prune_if_needed(
                 free_threshold_gb=_WARN_FREE_GB,
@@ -106,13 +106,13 @@ def run_preflight_checks(
             log(f"     Após limpeza: {free_gb:.1f} GB livres", indent=1)
 
         if free_gb < _MIN_FREE_GB:
-            log(f"     FALHA — {free_gb:.1f} GB livres (mínimo: {_MIN_FREE_GB} GB)",
+            log(f"     FALHA: {free_gb:.1f} GB livres (mínimo: {_MIN_FREE_GB} GB)",
                 level="ERROR", indent=1)
             failures.append(f"Espaço insuficiente: {free_gb:.1f} GB livres")
         else:
-            log(f"     OK — {free_gb:.1f} GB livres", level="OK", indent=1)
+            log(f"     OK: {free_gb:.1f} GB livres", level="OK", indent=1)
     except Exception as exc:  # noqa: BLE001
-        log(f"     AVISO — não foi possível verificar disco: {exc}", level="WARN", indent=1)
+        log(f"     AVISO: não foi possível verificar disco: {exc}", level="WARN", indent=1)
 
     # ── 3. Containers stale ───────────────────────────────────────────────
     log("3/8  Containers stale...", indent=1)
@@ -131,20 +131,20 @@ def run_preflight_checks(
                 c.remove(force=True)
         finally:
             client.close()
-        log(f"     OK — {len(stale)} container(s) stale removido(s)", level="OK", indent=1)
+        log(f"     OK: {len(stale)} container(s) stale removido(s)", level="OK", indent=1)
     except Exception as exc:  # noqa: BLE001
-        log(f"     AVISO — {exc}", level="WARN", indent=1)
+        log(f"     AVISO: {exc}", level="WARN", indent=1)
 
     # ── 4. Integridade da fila ────────────────────────────────────────────
     log("4/8  Integridade da fila...", indent=1)
     required = {"id", "combination", "tier", "config", "status"}
     corrupt  = [t.get("id", "?") for t in queue_tasks if not required.issubset(t.keys())]
     if corrupt:
-        log(f"     FALHA — {len(corrupt)} tarefa(s) corrompida(s): {corrupt[:5]}",
+        log(f"     FALHA: {len(corrupt)} tarefa(s) corrompida(s): {corrupt[:5]}",
             level="ERROR", indent=1)
         failures.append(f"Tarefas corrompidas: {corrupt[:5]}")
     else:
-        log(f"     OK — {len(queue_tasks)} tarefas com campos válidos", level="OK", indent=1)
+        log(f"     OK: {len(queue_tasks)} tarefas com campos válidos", level="OK", indent=1)
 
     # ── 5. Tabelas TPC-H por tier ─────────────────────────────────────────
     log("5/8  Tabelas TPC-H por tier...", indent=1)
@@ -163,7 +163,7 @@ def run_preflight_checks(
             (t for t in queue_tasks if t["tier"] == tier and t["status"] == "pending"), None
         )
         if sample is None:
-            log(f"     [{tier}] Sem tarefas pendentes — pulando", level="WARN", indent=1)
+            log(f"     [{tier}] Sem tarefas pendentes: pulando", level="WARN", indent=1)
             continue
         _check_end_to_end(tier, tag, "tpch", _CONN_TEST_SQL, sample["config"],
                           tier_configs, failures, label="SELECT 1")
@@ -175,7 +175,7 @@ def run_preflight_checks(
             (t for t in queue_tasks if t["tier"] == tier and t["status"] == "pending"), None
         )
         if sample is None:
-            log(f"     [{tier}] Sem tarefas pendentes — pulando", level="WARN", indent=1)
+            log(f"     [{tier}] Sem tarefas pendentes: pulando", level="WARN", indent=1)
             continue
         _check_end_to_end(tier, tag, "tpcds", _CONN_TEST_SQL, sample["config"],
                           tier_configs, failures, label="SELECT 1")
@@ -183,12 +183,12 @@ def run_preflight_checks(
     # ── Resultado final ───────────────────────────────────────────────────
     sep()
     if failures:
-        log(f"Preflight FALHOU — {len(failures)} problema(s):", level="ERROR")
+        log(f"Preflight FALHOU: {len(failures)} problema(s):", level="ERROR")
         for msg in failures:
             log(f"  • {msg}", level="ERROR", indent=1)
         sys.exit(1)
 
-    log("Preflight OK — todos os testes passaram.", level="OK")
+    log("Preflight OK: todos os testes passaram.", level="OK")
 
 
 # ---------------------------------------------------------------------------
@@ -226,12 +226,12 @@ def _check_tables(
         found = int(out) if out.isdigit() else 0
         n     = len(expected_tables)
         if res.exit_code != 0 or found != n:
-            log(f"     [{tier}] FALHA — {found}/{n} tabelas", level="ERROR", indent=1)
+            log(f"     [{tier}] FALHA: {found}/{n} tabelas", level="ERROR", indent=1)
             failures.append(f"Tabelas {db_name.upper()} ausentes no tier {tier}")
         else:
-            log(f"     [{tier}] OK — {found}/{n} tabelas", level="OK", indent=1)
+            log(f"     [{tier}] OK: {found}/{n} tabelas", level="OK", indent=1)
     except Exception as exc:  # noqa: BLE001
-        log(f"     [{tier}] ERRO — {exc}", level="ERROR", indent=1)
+        log(f"     [{tier}] ERRO: {exc}", level="ERROR", indent=1)
         failures.append(f"{db_name.upper()}: conexão falhou no tier {tier}")
     finally:
         if container:
@@ -267,12 +267,12 @@ def _check_end_to_end(
         )
         out = res.output.decode(errors="replace").strip() if res.output else ""
         if res.exit_code != 0:
-            log(f"     [{tier}] FALHA — {out[:120]}", level="ERROR", indent=1)
+            log(f"     [{tier}] FALHA: {out[:120]}", level="ERROR", indent=1)
             failures.append(f"{db_name.upper()} {label} falhou no tier {tier}")
         else:
-            log(f"     [{tier}] OK — {label} executou", level="OK", indent=1)
+            log(f"     [{tier}] OK: {label} executou", level="OK", indent=1)
     except Exception as exc:  # noqa: BLE001
-        log(f"     [{tier}] ERRO — {exc}", level="ERROR", indent=1)
+        log(f"     [{tier}] ERRO: {exc}", level="ERROR", indent=1)
         failures.append(f"{db_name.upper()}: end-to-end falhou no tier {tier}")
     finally:
         if container:

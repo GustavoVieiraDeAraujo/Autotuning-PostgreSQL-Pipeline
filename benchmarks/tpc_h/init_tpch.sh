@@ -24,7 +24,7 @@ for table in region nation supplier customer part partsupp orders lineitem; do
 done
 
 echo "[tpch] Criando chaves primárias e estrangeiras..."
-# dss.ri contém "CONNECT TO TPCD;" (ESQL/C), inválido no psql — filtra antes de executar
+# dss.ri contém "CONNECT TO TPCD;" (ESQL/C), inválido no psql: filtra antes de executar
 grep -v "^CONNECT" "$DIR/dss.ri" | \
     sed 's/TPCD\.//g' | \
     sed 's/ADD FOREIGN KEY \([A-Z0-9_]*\) (/ADD CONSTRAINT \1 FOREIGN KEY (/g' | \

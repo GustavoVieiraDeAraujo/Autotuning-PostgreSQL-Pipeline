@@ -28,7 +28,7 @@ Cada arquivo JSON em `specs/spaces/` define, para cada parâmetro, como o LHS de
 }
 ```
 
-Os ranges diferem por tier — o tier `high` tem ranges maiores (mais RAM, mais CPUs):
+Os ranges diferem por tier: o tier `high` tem ranges maiores (mais RAM, mais CPUs):
 
 ```json
 // specs/spaces/stage1/low.json
@@ -87,7 +87,7 @@ def save_configs(configs: dict, output_path: str) -> None
 
 Salva o dicionário `{tier: [Config, ...]}` em um arquivo JSON. Usado por `cli/generate.py` para salvar as configurações geradas (embora a forma principal de persistência seja via `ExecutionQueue`).
 
-## Stage 1 — Memória, Paralelismo, WAL, Planner Básico
+## Stage 1: Memória, Paralelismo, WAL, Planner Básico
 
 ### Dependências entre parâmetros
 
@@ -133,7 +133,7 @@ Três parâmetros do Stage 1 não são amostrados pelo LHS:
 
 2. **`max_worker_processes = cpu × 2 + 4`**: Pool de processos background. Calculado automaticamente para garantir que há sempre workers disponíveis para autovacuum além dos workers paralelos.
 
-3. **`synchronous_commit = "off"`**: Desabilitado para todos os benchmarks porque TPC-H e TPC-DS são workloads SELECT-only — commits não afetam a performance medida.
+3. **`synchronous_commit = "off"`**: Desabilitado para todos os benchmarks porque TPC-H e TPC-DS são workloads SELECT-only: commits não afetam a performance medida.
 
 ### Restrições de memória por tier
 
@@ -153,7 +153,7 @@ O `work_mem` tem floors por tier para evitar configurações com hash joins e so
 | medium | 32 MB |
 | high | 64 MB |
 
-## Stage 2 — Custos de CPU, Paralelismo Fino, Planejamento de Joins
+## Stage 2: Custos de CPU, Paralelismo Fino, Planejamento de Joins
 
 ### Hierarquia semântica dos custos de CPU
 
@@ -167,7 +167,7 @@ O `_fill_stage2()` garante essa hierarquia durante a geração, e o `_validate_s
 
 **Por quê essa hierarquia?** Semanticamente, processar o resultado final de uma operação (tuple cost) é mais caro que processar uma entrada de índice (index tuple cost), que por sua vez é mais caro que avaliar um operador isolado. Inverter essa hierarquia faria o planner preferir estratégias semanticamente mais caras por erros de custo.
 
-### `hash_mem_multiplier` — multiplicador de work_mem
+### `hash_mem_multiplier`: multiplicador de work_mem
 
 Este parâmetro é de impacto **muito alto** em OLAP. Ele define quanto de memória um hash join pode usar **além do `work_mem`**:
 
@@ -175,7 +175,7 @@ Este parâmetro é de impacto **muito alto** em OLAP. Ele define quanto de memó
 hash_join_memory = work_mem × hash_mem_multiplier
 ```
 
-Com `work_mem=64MB` e `hash_mem_multiplier=3.0`, um hash join pode usar até 192 MB — permitindo hash joins maiores sem spill para disco.
+Com `work_mem=64MB` e `hash_mem_multiplier=3.0`, um hash join pode usar até 192 MB: permitindo hash joins maiores sem spill para disco.
 
 O range no Stage 2 é `[1.0, 4.0]`. Valores mais altos são mais agressivos e devem ser validados contra a memória total disponível.
 
@@ -187,9 +187,9 @@ Esses thresholds controlam quando o planner considera usar paralelismo para um s
 - Valores menores → mais scans usam paralelismo → mais workers são utilizados
 - Valores maiores → só tabelas grandes usam paralelismo → workers mais ociosos
 
-**Constraint**: `min_parallel_table_scan_size ≥ min_parallel_index_scan_size` — tabelas inteiras precisam de mais dados para justificar o overhead de paralelismo do que índices.
+**Constraint**: `min_parallel_table_scan_size ≥ min_parallel_index_scan_size`: tabelas inteiras precisam de mais dados para justificar o overhead de paralelismo do que índices.
 
-## Stage 3 — Toggles Avançados, I/O Background
+## Stage 3: Toggles Avançados, I/O Background
 
 ### Toggles do planner (enable_*)
 
@@ -204,7 +204,7 @@ O Stage 3 contém 8 toggles booleanos que habilitam ou desabilitam estratégias 
 | `enable_indexscan` | Raramente (apenas para forçar seqscans em benchmarks de I/O) |
 | `enable_indexonlyscan` | Raramente |
 | `enable_parallel_append` | Se UNION ALL não é frequente no workload |
-| `enable_windowagg` | **Nunca desabilitar para TPC-DS** — window functions são críticas |
+| `enable_windowagg` | **Nunca desabilitar para TPC-DS**: window functions são críticas |
 
 Para o TPC-DS, `enable_windowagg=0` causa degradação severa pois desabilita window functions como `RANK()`, `ROW_NUMBER()` e `SUM() OVER` presentes em dezenas das 99 queries.
 
@@ -240,7 +240,7 @@ def generate_combined_config(
 ) -> Config
 ```
 
-Gera uma única configuração PostgreSQL chamando `_fill_stage1/2/3()` em sequência. O `config` dict é passado por referência e acumulado — stages posteriores podem usar valores já preenchidos por stages anteriores.
+Gera uma única configuração PostgreSQL chamando `_fill_stage1/2/3()` em sequência. O `config` dict é passado por referência e acumulado: stages posteriores podem usar valores já preenchidos por stages anteriores.
 
 ### `generate_valid_configs`
 

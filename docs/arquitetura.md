@@ -77,7 +77,7 @@ graph TD
 
 ## Responsabilidades por pacote
 
-### `pg_sampler/` — Geração de configurações
+### `pg_sampler/`: Geração de configurações
 
 É o motor de geração de configurações PostgreSQL. Responsável por:
 
@@ -89,7 +89,7 @@ graph TD
 
 Internamente, o pacote usa 3 stages de 12 parâmetros cada (36 total), com cada stage cobrindo uma dimensão diferente do sistema PostgreSQL.
 
-### `benchmarks/` — Execução de benchmarks
+### `benchmarks/`: Execução de benchmarks
 
 Responsável por toda a interação com Docker e PostgreSQL durante a execução:
 
@@ -97,7 +97,7 @@ Responsável por toda a interação com Docker e PostgreSQL durante a execução
 - `container.py`: Inicia e para containers PostgreSQL com uma configuração específica. Valida a config antes de iniciar (detecta parâmetros inválidos), aguarda o PostgreSQL estar pronto, e fornece `InvalidConfigError` quando o PG rejeita a configuração.
 - `query_executor.py`: Executa todas as queries de um benchmark, coleta `EXPLAIN ANALYZE BUFFERS`, estatísticas do `pg_stat_bgwriter`, e trata timeouts e OOM.
 
-### `runner/` — Orquestração
+### `runner/`: Orquestração
 
 Liga todos os componentes durante a execução real:
 
@@ -105,7 +105,7 @@ Liga todos os componentes durante a execução real:
 - `task_executor.py`: Para cada tarefa, inicia container TPC-H, executa benchmark, para container, repete para TPC-DS, tudo com timeout por tier (2h/4h/8h). Traduz exceções em ações da fila: `InvalidConfigError` → abandon, `TaskTimeoutError` → abandon, `Exception` → retry até 3×.
 - `result_writer.py`: Escreve os resultados de forma incremental durante a execução (não apenas no final), permitindo recuperação em caso de crash.
 
-### `task_queue/` — Fila persistente
+### `task_queue/`: Fila persistente
 
 `ExecutionQueue` é uma fila de tarefas com estados persistidos em `output/queue.json`. O ciclo de vida de uma tarefa é:
 
@@ -117,7 +117,7 @@ pending → running → done
 
 Na inicialização, tarefas em estado `running` são automaticamente recuperadas para `pending` (tratamento de crash/restart).
 
-### `monitoring/` — Métricas de hardware
+### `monitoring/`: Métricas de hardware
 
 `MetricsCollector` coleta amostras de hardware a cada `interval_s=2.0` segundos em uma thread separada. Cada sample inclui:
 - CPU: percentual, frequência MHz, temperatura (coretemp/k10temp)
@@ -129,13 +129,13 @@ Na inicialização, tarefas em estado `running` são automaticamente recuperadas
 
 No final, `stop()` retorna as samples brutas e um summary com média/máximo/mínimo de cada métrica.
 
-### `utils/` — Utilitários transversais
+### `utils/`: Utilitários transversais
 
 - `logging.py`: `TeeWriter` duplica stdout/stderr para arquivo e terminal simultaneamente. `log()` emite mensagens coloridas com nível (INFO/OK/WARN/ERROR/HEAD). `banner()` e `sep()` formatam seções no terminal.
 - `formatting.py`: `fmt_duration()` formata segundos em `1h 23m 45s`. `fmt_eta()` calcula e formata o tempo restante estimado baseado no progresso.
 - `docker_cleanup.py`: `auto_prune_if_needed()` limpa imagens/containers Docker quando o disco está abaixo de um threshold. Chamado a cada `PRUNE_EVERY_N_TASKS=5` tarefas pelo runner.
 
-### `web/` — Interface de controle
+### `web/`: Interface de controle
 
 `app.py` é um servidor FastAPI que expõe:
 - Endpoints REST para controlar os subprocessos (generate, prepare, run)
@@ -145,7 +145,7 @@ No final, `stop()` retorna as samples brutas e um summary com média/máximo/mí
 
 O frontend `index.html` consome essas APIs e exibe o progresso em tempo real.
 
-### `specs/` — Dados de configuração
+### `specs/`: Dados de configuração
 
 Arquivos JSON que definem os parâmetros de entrada do sistema:
 
@@ -200,7 +200,7 @@ A divisão em 3 stages é um **estudo de ablação**: cada stage agrupa parâmet
 
 ### Por que LHS e não random search puro?
 
-Com 36 parâmetros e apenas 30 configs por tier, o random search puro teria alta probabilidade de deixar regiões inteiras do espaço não cobertas. O LHS garante cobertura mínima de todas as dimensões — exatamente 1 amostra por estrato de cada parâmetro — com custo computacional idêntico ao random search.
+Com 36 parâmetros e apenas 30 configs por tier, o random search puro teria alta probabilidade de deixar regiões inteiras do espaço não cobertas. O LHS garante cobertura mínima de todas as dimensões (exatamente 1 amostra por estrato de cada parâmetro) com custo computacional idêntico ao random search.
 
 ### Por que fila persistente em JSON?
 

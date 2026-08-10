@@ -17,7 +17,7 @@ pip install -r requirements.txt
 docker ps
 ```
 
-## Passo 1 — Interface Web (opcional)
+## Passo 1: Interface Web (opcional)
 
 A interface web permite controlar todo o pipeline visualmente, sem usar a CLI diretamente.
 
@@ -32,7 +32,7 @@ Acesse `http://localhost:8000` no navegador. A interface permite:
 - Inspecionar o estado da fila e resultados
 - Verificar o status das imagens Docker
 
-## Passo 2 — Gerar Configurações (`cli/generate.py`)
+## Passo 2: Gerar Configurações (`cli/generate.py`)
 
 O gerador cria a fila de tarefas que será executada pelo runner.
 
@@ -79,7 +79,7 @@ output/generate.log ← log completo da geração
 }
 ```
 
-## Passo 3 — Preparar Imagens Docker (`cli/prepare.py`)
+## Passo 3: Preparar Imagens Docker (`cli/prepare.py`)
 
 O prepare constrói as 6 imagens Docker com os dados TPC-H e TPC-DS pré-carregados.
 
@@ -115,7 +115,7 @@ python -m cli.prepare
 !!! warning "Tempo de execução"
     A primeira execução do prepare pode levar várias horas. As imagens TPC-DS com SF=4 incluem tabelas de dezenas de gigabytes. Imagens já construídas são detectadas automaticamente e puladas.
 
-## Passo 4 — Executar Benchmarks (`cli/run.py`)
+## Passo 4: Executar Benchmarks (`cli/run.py`)
 
 O runner executa todas as tarefas da fila, uma por uma.
 
@@ -163,8 +163,8 @@ Para cada tarefa:
 
 | Exceção | Significado | Ação |
 |---------|-------------|------|
-| `InvalidConfigError` | PostgreSQL rejeitou um parâmetro na inicialização | `mark_abandoned` — sem retry |
-| `TaskTimeoutError` | Tarefa excedeu o timeout do tier | `mark_abandoned` — sem retry |
+| `InvalidConfigError` | PostgreSQL rejeitou um parâmetro na inicialização | `mark_abandoned`: sem retry |
+| `TaskTimeoutError` | Tarefa excedeu o timeout do tier | `mark_abandoned`: sem retry |
 | `Exception` (outros) | Erro transiente (Docker, disco, rede) | `mark_failed` + `requeue` (até 3×) → `mark_abandoned` |
 
 ### Timeouts por tier

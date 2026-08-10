@@ -11,7 +11,7 @@ ENV POSTGRES_PASSWORD=postgres
 # do volume para que os dados TPC-H sejam incluídos na imagem commitada.
 ENV PGDATA=/var/lib/postgresql/pgdata
 
-# build-essential inclui gcc, cc, make, libc-dev — necessários para compilar o dbgen
+# build-essential inclui gcc, cc, make, libc-dev: necessários para compilar o dbgen
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential git ca-certificates \
     && rm -rf /var/lib/apt/lists/*

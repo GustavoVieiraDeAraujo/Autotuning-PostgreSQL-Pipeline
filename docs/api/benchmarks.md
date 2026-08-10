@@ -1,4 +1,4 @@
-# API Reference — `benchmarks/`
+# API Reference: `benchmarks/`
 
 Referência completa de todos os módulos do pacote `benchmarks`.
 
@@ -25,11 +25,11 @@ Inicia um container PostgreSQL com a configuração especificada e aguarda o ser
 
 | Parâmetro | Tipo | Padrão | Descrição |
 |-----------|------|--------|-----------|
-| `tier_config` | `dict` | — | Specs do tier: `{cpu, memory_mb, memory_swap_mb, shm_size_mb}` |
-| `pg_config` | `dict` | — | Parâmetros PostgreSQL: `{param: valor}` |
-| `db_name` | `str` | — | Nome do banco (`"tpch"` ou `"tpcds"`) |
-| `image` | `str` | — | Tag da imagem Docker (ex: `"tpch-sf2"`) |
-| `container_name` | `str` | — | Nome do container (ex: `"tpch_bench_42"`) |
+| `tier_config` | `dict` |: | Specs do tier: `{cpu, memory_mb, memory_swap_mb, shm_size_mb}` |
+| `pg_config` | `dict` |: | Parâmetros PostgreSQL: `{param: valor}` |
+| `db_name` | `str` |: | Nome do banco (`"tpch"` ou `"tpcds"`) |
+| `image` | `str` |: | Tag da imagem Docker (ex: `"tpch-sf2"`) |
+| `container_name` | `str` |: | Nome do container (ex: `"tpch_bench_42"`) |
 | `host_port` | `int` | `5432` | Porta do host mapeada para a 5432 do container |
 | `max_wait_s` | `float` | `60.0` | Timeout de espera do PostgreSQL (segundos) |
 | `log_fn` | `Callable \| None` | `None` | Callback de log (recebe string de mensagem) |
@@ -37,8 +37,8 @@ Inicia um container PostgreSQL com a configuração especificada e aguarda o ser
 **Retorna:** Objeto `Container` do Docker SDK.
 
 **Lança:**
-- `InvalidConfigError` — PostgreSQL rejeitou um parâmetro
-- `RuntimeError` — Timeout aguardando o PostgreSQL ficar pronto
+- `InvalidConfigError`: PostgreSQL rejeitou um parâmetro
+- `RuntimeError`: Timeout aguardando o PostgreSQL ficar pronto
 
 ### `remove_postgres_container`
 

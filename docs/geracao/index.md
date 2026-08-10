@@ -18,65 +18,65 @@ Cada configuração é um dicionário `{parâmetro: valor}` que pode ser aplicad
 
 Os parâmetros são organizados em 3 stages de **12 parâmetros cada**, refletindo diferentes aspectos do sistema PostgreSQL:
 
-### Stage 1 — Memória, Paralelismo, WAL, Planner Básico (12 params)
+### Stage 1: Memória, Paralelismo, WAL, Planner Básico (12 params)
 
 Os parâmetros de maior impacto em workloads analíticos. Determinam quanto de RAM está disponível para caches e operações, quantos workers paralelos podem ser usados, e como o planner avalia estratégias de acesso.
 
 | Parâmetro | Tipo | Impacto OLAP |
 |-----------|------|--------------|
-| `jit` | bool | Alto — compilação JIT de expressões complexas |
-| `seq_page_cost` | float | **Fixo em 1.0** — âncora do sistema de custo |
-| `random_page_cost` | float [1.0, 4.0] | Alto — define preferência por index vs seqscan |
-| `default_statistics_target` | int [100, 400] | Médio — qualidade das estimativas de cardinalidade |
-| `max_parallel_workers` | int [1, vCPUs] | Alto — limite superior de workers disponíveis |
-| `max_parallel_workers_per_gather` | int [1, vCPUs//2] | Alto — workers por nó de Gather |
-| `max_worker_processes` | int | **Fixo em cpu×2+4** — pool de processos background |
-| `shared_buffers` | memory | Alto — cache de páginas em memória compartilhada |
-| `effective_cache_size` | memory | Médio — hint do planner (não aloca RAM real) |
-| `work_mem` | memory | **Muito alto** — memória por operação de sort/hash join |
-| `enable_hashagg` | bool | Alto — hash aggregation vs sort-based aggregation |
-| `enable_bitmapscan` | bool | Médio — bitmap index scans |
-| `enable_nestloop` | bool | Alto — nested loop joins (desligar favorece hash/merge) |
-| `enable_parallel_hash` | bool | Alto — hash joins em planos paralelos |
-| `synchronous_commit` | enum | **Fixo em 'off'** — sem efeito em workloads SELECT-only |
+| `jit` | bool | Alto: compilação JIT de expressões complexas |
+| `seq_page_cost` | float | **Fixo em 1.0**: âncora do sistema de custo |
+| `random_page_cost` | float [1.0, 4.0] | Alto: define preferência por index vs seqscan |
+| `default_statistics_target` | int [100, 400] | Médio: qualidade das estimativas de cardinalidade |
+| `max_parallel_workers` | int [1, vCPUs] | Alto: limite superior de workers disponíveis |
+| `max_parallel_workers_per_gather` | int [1, vCPUs//2] | Alto: workers por nó de Gather |
+| `max_worker_processes` | int | **Fixo em cpu×2+4**: pool de processos background |
+| `shared_buffers` | memory | Alto: cache de páginas em memória compartilhada |
+| `effective_cache_size` | memory | Médio: hint do planner (não aloca RAM real) |
+| `work_mem` | memory | **Muito alto**: memória por operação de sort/hash join |
+| `enable_hashagg` | bool | Alto: hash aggregation vs sort-based aggregation |
+| `enable_bitmapscan` | bool | Médio: bitmap index scans |
+| `enable_nestloop` | bool | Alto: nested loop joins (desligar favorece hash/merge) |
+| `enable_parallel_hash` | bool | Alto: hash joins em planos paralelos |
+| `synchronous_commit` | enum | **Fixo em 'off'**: sem efeito em workloads SELECT-only |
 
-### Stage 2 — Custos de CPU, Paralelismo Fino, Planejamento de Joins (12 params)
+### Stage 2: Custos de CPU, Paralelismo Fino, Planejamento de Joins (12 params)
 
 Parâmetros de impacto moderado que refinam o comportamento do planner e controlam thresholds de paralelismo.
 
 | Parâmetro | Tipo | Impacto OLAP |
 |-----------|------|--------------|
-| `cpu_tuple_cost` | float | Baixo — custo de processar uma tupla no resultado |
-| `cpu_index_tuple_cost` | float | Baixo — custo de processar uma entrada de índice |
-| `cpu_operator_cost` | float | Baixo — custo de avaliar um operador/função |
-| `parallel_setup_cost` | int | Alto — overhead de iniciar um plano paralelo |
-| `parallel_tuple_cost` | float | Médio — custo por tupla transferida entre workers |
-| `min_parallel_table_scan_size` | memory | Alto — tamanho mínimo para habilitar parallel seqscan |
-| `min_parallel_index_scan_size` | memory | Médio — tamanho mínimo para parallel index scan |
-| `join_collapse_limit` | int [4, 16] | Médio — profundidade da busca exaustiva de ordem de join |
-| `from_collapse_limit` | int [4, 16] | Médio — número de subqueries inlineadas |
-| `hash_mem_multiplier` | float [1.0, 4.0] | **Muito alto** — multiplica work_mem para hash joins |
-| `enable_mergejoin` | bool | Alto — merge join (requer dados ordenados) |
-| `enable_hashjoin` | bool | **Muito alto** — hash join (o mais usado em OLAP) |
+| `cpu_tuple_cost` | float | Baixo: custo de processar uma tupla no resultado |
+| `cpu_index_tuple_cost` | float | Baixo: custo de processar uma entrada de índice |
+| `cpu_operator_cost` | float | Baixo: custo de avaliar um operador/função |
+| `parallel_setup_cost` | int | Alto: overhead de iniciar um plano paralelo |
+| `parallel_tuple_cost` | float | Médio: custo por tupla transferida entre workers |
+| `min_parallel_table_scan_size` | memory | Alto: tamanho mínimo para habilitar parallel seqscan |
+| `min_parallel_index_scan_size` | memory | Médio: tamanho mínimo para parallel index scan |
+| `join_collapse_limit` | int [4, 16] | Médio: profundidade da busca exaustiva de ordem de join |
+| `from_collapse_limit` | int [4, 16] | Médio: número de subqueries inlineadas |
+| `hash_mem_multiplier` | float [1.0, 4.0] | **Muito alto**: multiplica work_mem para hash joins |
+| `enable_mergejoin` | bool | Alto: merge join (requer dados ordenados) |
+| `enable_hashjoin` | bool | **Muito alto**: hash join (o mais usado em OLAP) |
 
-### Stage 3 — Toggles Avançados do Planner, I/O Background (12 params)
+### Stage 3: Toggles Avançados do Planner, I/O Background (12 params)
 
 Parâmetros de ajuste fino com impacto sutil mas mensurável em workloads específicos.
 
 | Parâmetro | Tipo | Impacto OLAP |
 |-----------|------|--------------|
-| `enable_memoize` | bool | Médio — cache de resultados de subplanos internos (PG14+) |
-| `enable_gathermerge` | bool | Alto — merge paralelo com ORDER BY |
-| `enable_incremental_sort` | bool | Alto — sort incremental em dados parcialmente ordenados (PG13+) |
-| `enable_material` | bool | Médio — materialização em loops de join |
-| `enable_indexscan` | bool | Médio — index scans B-tree/hash |
-| `enable_indexonlyscan` | bool | Médio — index-only scans com covering index |
-| `enable_parallel_append` | bool | Médio — append paralelo para UNION ALL e partições (PG11+) |
-| `enable_windowagg` | bool | Alto — window functions (RANK, ROW_NUMBER, SUM OVER) |
-| `parallel_leader_participation` | bool | Baixo — líder do Gather também processa tuplas |
-| `checkpoint_completion_target` | float [0.5, 0.9] | Baixo — spread de I/O de checkpoint |
-| `bgwriter_lru_maxpages` | int | Baixo — páginas escritas pelo bgwriter por round |
-| `wal_buffers` | memory | Baixo — buffer de WAL em memória compartilhada |
+| `enable_memoize` | bool | Médio: cache de resultados de subplanos internos (PG14+) |
+| `enable_gathermerge` | bool | Alto: merge paralelo com ORDER BY |
+| `enable_incremental_sort` | bool | Alto: sort incremental em dados parcialmente ordenados (PG13+) |
+| `enable_material` | bool | Médio: materialização em loops de join |
+| `enable_indexscan` | bool | Médio: index scans B-tree/hash |
+| `enable_indexonlyscan` | bool | Médio: index-only scans com covering index |
+| `enable_parallel_append` | bool | Médio: append paralelo para UNION ALL e partições (PG11+) |
+| `enable_windowagg` | bool | Alto: window functions (RANK, ROW_NUMBER, SUM OVER) |
+| `parallel_leader_participation` | bool | Baixo: líder do Gather também processa tuplas |
+| `checkpoint_completion_target` | float [0.5, 0.9] | Baixo: spread de I/O de checkpoint |
+| `bgwriter_lru_maxpages` | int | Baixo: páginas escritas pelo bgwriter por round |
+| `wal_buffers` | memory | Baixo: buffer de WAL em memória compartilhada |
 
 ## As 7 combinações de stages
 
@@ -90,7 +90,7 @@ O gerador produz 7 combinações de stages para o estudo de ablação:
 | `s1s2` | [1,2] | 24 | Ganho de combinar memória+custo |
 | `s1s3` | [1,3] | 24 | Ganho de combinar memória+toggles |
 | `s2s3` | [2,3] | 24 | Ganho de combinar custo+toggles |
-| `s1s2s3` | [1,2,3] | 36 | Espaço completo — custo de alta dimensão |
+| `s1s2s3` | [1,2,3] | 36 | Espaço completo: custo de alta dimensão |
 
 A hipótese experimental central: **mais parâmetros → melhor cobertura do espaço, mas menor densidade amostral por dimensão → rendimentos decrescentes a partir de certo ponto.**
 
@@ -127,6 +127,6 @@ pg_sampler/
 
 ## Páginas desta seção
 
-- [**Latin Hypercube Sampling**](lhs.md) — Como o LHS garante cobertura uniforme do espaço de busca
-- [**Stages e Espaços de Parâmetros**](estagios.md) — Detalhamento dos 36 parâmetros por stage
-- [**Restrições e Validação**](restricoes.md) — Como configurações inválidas são detectadas e descartadas
+- [**Latin Hypercube Sampling**](lhs.md): Como o LHS garante cobertura uniforme do espaço de busca
+- [**Stages e Espaços de Parâmetros**](estagios.md): Detalhamento dos 36 parâmetros por stage
+- [**Restrições e Validação**](restricoes.md): Como configurações inválidas são detectadas e descartadas

@@ -65,7 +65,7 @@ O collector detecta automaticamente quais sensores estão disponíveis no sistem
 - **ACPI**: detecta zona de temperatura ACPI via `acpitz`
 - **WiFi**: detecta módulos WiFi com sensores de temperatura
 
-A detecção acontece uma vez na criação do `MetricsCollector`. Sensores não encontrados resultam em `None` nos snapshots — sem erros.
+A detecção acontece uma vez na criação do `MetricsCollector`. Sensores não encontrados resultam em `None` nos snapshots: sem erros.
 
 ## `MetricsCollector`
 
@@ -171,7 +171,7 @@ As métricas de hardware servem como **features adicionais** e **variáveis de c
 Pico de utilização de CPU durante o benchmark. Configurações com `max_parallel_workers` alto devem mostrar picos mais altos. Se o pico for sempre < 50%, os workers não estão sendo aproveitados.
 
 ### `mem_percent_max`
-Pico de uso de RAM. Valores próximos de 100% indicam pressão de memória — podem correlacionar com `work_mem` alto e spill para disco.
+Pico de uso de RAM. Valores próximos de 100% indicam pressão de memória: podem correlacionar com `work_mem` alto e spill para disco.
 
 ### `disk_write_mb_s_avg`
 Taxa de escrita em disco durante o benchmark. Para workloads SELECT-only como TPC-H/DS, escrita alta indica spill de hash joins (`temp_written` alto) ou atividade de checkpoint/bgwriter.
@@ -183,4 +183,4 @@ Energia total consumida em joules, medida via Intel RAPL (Running Average Power 
     O servidor usado neste TCC não permite acesso ao RAPL sem `root`. Todas as amostras de energia serão `null`. A métrica está implementada e funcionará em servidores com permissão adequada.
 
 ### `gpu_*_c`
-Temperaturas da GPU AMD (se presente). As temperaturas da GPU são coletadas mesmo que a GPU não seja usada pelo PostgreSQL — servem como indicador de carga térmica do sistema.
+Temperaturas da GPU AMD (se presente). As temperaturas da GPU são coletadas mesmo que a GPU não seja usada pelo PostgreSQL: servem como indicador de carga térmica do sistema.

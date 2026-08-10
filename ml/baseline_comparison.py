@@ -1,12 +1,12 @@
 """
 Comparação: config de fábrica do PostgreSQL 17 vs. config recomendada pelo modelo.
 
-Diferente de cost_analysis.py (que compara configs REAIS observadas no dataset —
+Diferente de cost_analysis.py (que compara configs REAIS observadas no dataset: 
 pior vs. mediana vs. melhor, tudo medido), este script injeta a config de
 FÁBRICA do PostgreSQL 17 (nunca rodada de verdade nos benchmarks) como mais um
 candidato, e usa o modelo pra prever onde ela ficaria posicionada frente às
 configs reais do dataset. É uma estimativa (extrapolação em alguns parâmetros
-fora do espaço de busca), não uma medição — o script deixa isso explícito.
+fora do espaço de busca), não uma medição: o script deixa isso explícito.
 
 Os valores de fábrica foram extraídos de um container postgres:17 vanilla via
 `SELECT name, boot_val, unit FROM pg_settings`, não digitados de memória.
@@ -27,7 +27,7 @@ from sampler.space_loader import load_stage_spaces
 COMBO = "s1_s2_s3"  # config de fábrica define todos os 33 parâmetros
 
 # ─────────────────────────────────────────────────────────────────────────
-# Config de fábrica do PostgreSQL 17 — boot_val real, via container vanilla:
+# Config de fábrica do PostgreSQL 17: boot_val real, via container vanilla:
 #   docker run --rm -d -e POSTGRES_PASSWORD=x postgres:17
 #   SELECT name, boot_val, unit FROM pg_settings WHERE name IN (...)
 # Convertida pra o mesmo formato do pg_config dos JSONs de benchmark.
@@ -131,7 +131,7 @@ def compare_tier(tier: str, models: dict) -> None:
     real_candidates, subset = _real_candidates(df, tier)
 
     if not real_candidates:
-        print(f"\n[{tier}] Sem dados para combo={COMBO} — pulando.")
+        print(f"\n[{tier}] Sem dados para combo={COMBO}: pulando.")
         return
 
     out_of_range = _out_of_range_params(tier)
@@ -156,7 +156,7 @@ def compare_tier(tier: str, models: dict) -> None:
     hw = TIER_HARDWARE[tier]
 
     print(f"\n{'═'*64}")
-    print(f"  {tier.upper()}  ({TIER_INSTANCE[tier]}, SF={hw['sf']})  —  {n} configs candidatas")
+    print(f"  {tier.upper()}  ({TIER_INSTANCE[tier]}, SF={hw['sf']}): {n} configs candidatas")
     print(f"{'═'*64}")
 
     if out_of_range:
@@ -184,7 +184,7 @@ def compare_tier(tier: str, models: dict) -> None:
     print(f"  {'─'*40}")
     if default_rank == 1:
         print(f"  ATENÇÃO: o modelo prevê a config de fábrica como a MELHOR das {n}")
-        print(f"  candidatas neste tier — checar manualmente antes de citar (pode ser")
+        print(f"  candidatas neste tier: checar manualmente antes de citar (pode ser")
         print(f"  extrapolação da árvore em parâmetro fora do espaço de busca, não um")
         print(f"  resultado real de que 'não tunar' é ótimo).")
     print(f"  Speedup previsto (fábrica → recomendado)  : {speedup:.1f}×")
