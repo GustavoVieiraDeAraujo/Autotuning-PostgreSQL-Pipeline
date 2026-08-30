@@ -6,11 +6,7 @@
 > das recomendações em instâncias de nuvem real (os 3 tiers avaliados aqui
 > são containers Docker rodando na mesma máquina física, não nuvem de
 > verdade, ver [Limitações](#limitações)), etapa que esbarrou numa barreira
-> financeira de custo de infraestrutura. Migrei para um novo tema de
-> TCC (pré-aquecimento preditivo de infraestrutura de dado serverless em
-> pipelines de treino de ML). Este repositório e seus 2 irmãos ficam mantidos
-> como referência funcional e ponto de partida de ideias (ver seção
-> "Investigação final" abaixo).
+> financeira de custo de infraestrutura.
 
 ## Sumário
 
