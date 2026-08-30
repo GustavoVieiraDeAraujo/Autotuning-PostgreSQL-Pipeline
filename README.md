@@ -1,13 +1,5 @@
 # Autotuning PostgreSQL: Pipeline
 
-> **Status: projeto interrompido, arquivado (resultados finais fechados em
-> 2026-05-30).** Concebi este projeto para ser o tema do meu TCC, mas não
-> cheguei a usá-lo de fato como TCC: faltou concluir a etapa de validação
-> das recomendações em instâncias de nuvem real (os 3 tiers avaliados aqui
-> são containers Docker rodando na mesma máquina física, não nuvem de
-> verdade, ver [Limitações](#limitações)), etapa que esbarrou numa barreira
-> financeira de custo de infraestrutura.
-
 ## Sumário
 
 - [Objetivo do projeto](#objetivo-do-projeto)
@@ -21,7 +13,7 @@
 - [Estrutura do Projeto](#estrutura-do-projeto)
 - [Requisitos](#requisitos)
 - [Como Executar](#como-executar)
-- [Investigação final: sementes pro próximo TCC](#investigação-final-2026-08-09-sementes-pro-próximo-tcc)
+- [Investigação final: foundation models tabulares](#investigação-final-09082026-foundation-models-tabulares)
 - [Escopo deste repositório](#escopo-deste-repositório)
 
 ## Objetivo do projeto
@@ -516,9 +508,9 @@ estão versionados no repositório, é possível pular toda a etapa cara de
 coleta e ir direto para `make train && make evaluate` para reproduzir os
 resultados reportados acima sem rodar nenhum benchmark Docker.
 
-## Investigação final (2026-08-09): sementes pro próximo TCC
+## Investigação final (09/08/2026): foundation models tabulares
 
-Antes de encerrar o projeto, testei se um **foundation model tabular
+Testei se um **foundation model tabular
 pré-treinado** (TabICL, in-context learning, sem nenhum tuning de
 hiperparâmetro) conseguiria competir com os especialistas XGBoost treinados
 especificamente pra este problema, pergunta motivada pela onda de mercado
@@ -545,8 +537,7 @@ embora o erro absoluto (RMSE) do TabICL seja instável com poucos dados
 absoluto) para recomendar, essa instabilidade importa menos do que parece à
 primeira vista. Achado não conclusivo (rodado 1 seed de teste, poucas
 repetições) mas promissor o suficiente para registrar como ponto de partida
-de investigação futura, mas não aprofundei porque migrei de tema
-de TCC.
+de investigação futura, mas não aprofundei.
 
 Também ficou pendente (interrompido por reinício de máquina, não retomado):
 uma comparação de execução real entre a **config de fábrica do PostgreSQL
