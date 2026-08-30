@@ -1,12 +1,12 @@
 # Autotuning PostgreSQL: Pipeline
 
 > **Status: projeto interrompido, arquivado (resultados finais fechados em
-> 2026-05-30).** Foi concebido para ser o tema do TCC do autor, mas não
-> chegou a ser de fato usado como TCC: faltou concluir a etapa de validação
+> 2026-05-30).** Concebi este projeto para ser o tema do meu TCC, mas não
+> cheguei a usá-lo de fato como TCC: faltou concluir a etapa de validação
 > das recomendações em instâncias de nuvem real (os 3 tiers avaliados aqui
 > são containers Docker rodando na mesma máquina física, não nuvem de
 > verdade, ver [Limitações](#limitações)), etapa que esbarrou numa barreira
-> financeira de custo de infraestrutura. O autor migrou para um novo tema de
+> financeira de custo de infraestrutura. Migrei para um novo tema de
 > TCC (pré-aquecimento preditivo de infraestrutura de dado serverless em
 > pipelines de treino de ML). Este repositório e seus 2 irmãos ficam mantidos
 > como referência funcional e ponto de partida de ideias (ver seção
@@ -549,7 +549,7 @@ embora o erro absoluto (RMSE) do TabICL seja instável com poucos dados
 absoluto) para recomendar, essa instabilidade importa menos do que parece à
 primeira vista. Achado não conclusivo (rodado 1 seed de teste, poucas
 repetições) mas promissor o suficiente para registrar como ponto de partida
-de investigação futura, mas não foi aprofundado porque o autor migrou de tema
+de investigação futura, mas não aprofundei porque migrei de tema
 de TCC.
 
 Também ficou pendente (interrompido por reinício de máquina, não retomado):
