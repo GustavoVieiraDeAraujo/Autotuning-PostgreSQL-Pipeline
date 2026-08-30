@@ -391,7 +391,7 @@ banco em produção, não apenas do custo por SF.
 | ResTune | 2021 | RL + meta-learning | Sysbench/TPC-C | Tier fixo |
 | LlamaTune | 2022 | BO + redução de dimensionalidade | TPC-H + YCSB | Tier fixo |
 | GPTuner | 2024 | LLM + BO | TPC-H/TPC-C | Tier fixo |
-| **Este TCC** | 2026 | XGBRanker offline | **TPC-H + TPC-DS** | **3 tiers** |
+| **Este projeto** | 2026 | XGBRanker offline | **TPC-H + TPC-DS** | **3 tiers** |
 
 Nenhum dos trabalhos citados combina TPC-H e TPC-DS no mesmo pipeline, nem
 faz co-seleção de hardware junto com parâmetros: a maioria assume um único
@@ -449,7 +449,7 @@ das principais ameaças à validade do trabalho:
   parâmetros de I/O em background (`checkpoint_completion_target`,
   `bgwriter_lru_maxpages`, `wal_buffers`) foram inclusive removidos do
   espaço de busca por não terem sinal nesse cenário. O meta-modelo e as
-  conclusões deste TCC não se estendem a workloads OLTP ou mistos.
+  conclusões deste projeto não se estendem a workloads OLTP ou mistos.
 
 ## Estrutura do Projeto
 
@@ -545,7 +545,7 @@ uma comparação de execução real entre a **config de fábrica do PostgreSQL
 mercado) contra a recomendação do meta-modelo, nos 3 tiers. Ver
 `ml/baseline_comparison.py`, `ml/pgtune_baseline.py`,
 `scripts/enqueue_baseline_tasks.py`. Achado parcial relevante: o **pgtune só
-calcula 7 dos 33 parâmetros** do espaço de busca deste TCC. Os outros 26
+calcula 7 dos 33 parâmetros** do espaço de busca deste projeto. Os outros 26
 (toggles do planner, custos de CPU) ficam no default. Um ponto real de
 dados foi coletado (config de fábrica, tier low): 339,9ms/53,4% de cache
 medidos de verdade, contra 997ms previstos pelo modelo. Isso confirma
